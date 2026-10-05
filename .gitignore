@@ -47,3 +47,10 @@ next-env.d.ts
 /public/uploads
 
 __pycache__/
+
+# graphify: machine-specific files (the graph itself is versioned)
+/graphify-out/cache/
+/graphify-out/.graphify_python
+/graphify-out/.graphify_root
+# Claude Code hooks written by graphify contain absolute paths of this PC
+/.claude/settings.json

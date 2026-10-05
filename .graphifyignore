@@ -1,0 +1,10 @@
+# What graphify should NOT map (on top of .gitignore)
+public/
+.claude/
+graphify-out/
+data/
+package-lock.json
+next-env.d.ts
+# generated vector paths of the logo: data, not code
+src/components/logo-paths.ts
+src/app/icon.svg

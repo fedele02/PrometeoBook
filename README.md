@@ -32,14 +32,38 @@ Admin: <http://localhost:3000/admin> · password di sviluppo `prometeo` (o `ADMI
 
 ## Pubblicare su Vercel
 
-1. Carica il progetto su GitHub e importalo su [vercel.com](https://vercel.com/new) (Framework: Next.js, nessuna configurazione extra).
-2. **Settings → Environment Variables**: aggiungi le variabili di `.env.example` (`NEXT_PUBLIC_SITE_URL` = dominio definitivo).
-3. Collega il dominio in **Settings → Domains**.
+> Prima Supabase, poi Vercel: online i dati **devono** stare su Supabase (su Vercel i file non si possono scrivere, la modalità demo locale non funziona).
 
-Le pagine pubbliche sono statiche e si rigenerano da sole quando l'admin salva una modifica, quindi caricano all'istante e costano quasi nulla.
+1. Completa **Collegare Supabase** (sopra), compreso `npm run seed:supabase` e l'utente admin.
+2. Su [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → `fedele02/PrometeoBook` (collega l'account GitHub se richiesto).
+3. Nella schermata di import: Framework **Next.js** (rilevato da solo), Root Directory `./`, Build/Install command **lasciati di default**.
+4. Apri **Environment Variables** e aggiungi, per *Production, Preview e Development*:
+
+   | Nome | Valore |
+   |---|---|
+   | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | chiave *publishable* (`sb_publishable_…`) |
+   | `SUPABASE_SECRET_KEY` | chiave *secret* (`sb_secret_…`) — mai pubblicarla |
+   | `NEXT_PUBLIC_SITE_URL` | per ora `https://<progetto>.vercel.app`, poi il dominio definitivo |
+   | `RESEND_API_KEY`, `BOOKING_NOTIFY_EMAIL`, `BOOKING_FROM_EMAIL` | facoltative, email a ogni prenotazione |
+
+5. **Deploy**. Alla fine apri l'indirizzo `*.vercel.app` e prova: home, menu, una prenotazione, accesso a `/admin` con l'utente Supabase.
+6. **Dominio**: Project → Settings → **Domains** → aggiungi il dominio e imposta i DNS indicati da Vercel presso il registrar. Poi aggiorna `NEXT_PUBLIC_SITE_URL` con il dominio e fai **Redeploy** (Deployments → ⋯ → Redeploy).
+7. In Supabase → Authentication → **URL Configuration** imposta *Site URL* al dominio definitivo.
+8. Solo ora scarica e stampa il **QR del menu** da Admin → Menu (punta a `NEXT_PUBLIC_SITE_URL/qr`).
+
+Ogni `git push` su `main` pubblica automaticamente una nuova versione. Le pagine pubbliche sono statiche e si rigenerano da sole quando l'admin salva una modifica.
 
 ### Notifica email delle prenotazioni (facoltativa)
 Crea un account [Resend](https://resend.com), verifica il dominio e imposta `RESEND_API_KEY`, `BOOKING_NOTIFY_EMAIL`, `BOOKING_FROM_EMAIL`. Comunque, la pagina Prenotazioni dell'admin si aggiorna da sola ogni 45 secondi.
+
+## Mappa del codice (graphify)
+
+Il grafo del progetto è in `graphify-out/` (`graph.html` da aprire nel browser, `GRAPH_REPORT.md`, `graph.json`).
+- Dopo modifiche al codice: `graphify update .` (lo fa anche l'hook post-commit).
+- Dopo modifiche ai documenti: `/graphify . --update` in Claude Code.
+- Domande sul codice: `graphify query "come funziona la prenotazione?"`.
+Le regole per Claude (aggiornare grafo, README, design system e modello dati a ogni modifica) sono in `CLAUDE.md`.
 
 ## Area admin
 
