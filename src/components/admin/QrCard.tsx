@@ -9,7 +9,6 @@ export async function QrCard() {
     QRCode.toString(url, { type: "svg", margin: 1, color: { dark: "#0b0b0b", light: "#ffffff" } }),
     QRCode.toDataURL(url, { width: 1200, margin: 2, color: { dark: "#0b0b0b", light: "#ffffff" } }),
   ]);
-  const local = /localhost|127\.0\.0\.1/.test(url);
 
   return (
     <Card className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -23,11 +22,6 @@ export async function QrCard() {
           </a>
         </p>
         <p className="mt-2 text-xs text-cream/45 [overflow-wrap:anywhere]">{url}</p>
-        {local && (
-          <p className="mt-2 text-xs text-ember">
-            Ora punta a localhost: stampalo dopo aver impostato il dominio definitivo (NEXT_PUBLIC_SITE_URL).
-          </p>
-        )}
         <div className="mt-4 flex flex-wrap gap-2">
           <a href={png} download="prometeo-menu-qr.png" className="btn btn-line min-h-10 px-4 text-xs">
             Scarica PNG
