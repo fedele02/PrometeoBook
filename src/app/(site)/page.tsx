@@ -7,7 +7,7 @@ import type { Settings } from "@/lib/types";
 import { Hero } from "@/components/home/Hero";
 import { Percorso, type Course } from "@/components/home/Percorso";
 import { IconArrow, IconPhone, IconPin, IconPlus } from "@/components/Icons";
-import { Flame, Ornament } from "@/components/Logo";
+import { Ornament } from "@/components/Logo";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { OpenNow } from "@/components/site/OpenNow";
 
@@ -62,10 +62,7 @@ export default async function HomePage() {
       <section className="bg-ink px-6 py-20 md:px-10 md:py-36">
         <div className="mx-auto grid max-w-7xl items-center gap-12 md:grid-cols-[1.1fr_1fr] md:gap-20">
           <div>
-            <Reveal className="text-gold">
-              <Flame className="h-6 w-6" />
-            </Reveal>
-            <Reveal as="blockquote" delay={80} className="mt-6 font-serif text-[2.15rem] leading-[1.12] text-cream md:text-[3.6rem]">
+            <Reveal as="blockquote" className="font-serif text-[2.15rem] leading-[1.12] text-cream md:text-[3.6rem]">
               {quoteA} {quoteB && <em className="text-gold">{quoteB}</em>}
             </Reveal>
             <Reveal as="p" delay={160} className="mt-7 max-w-lg text-[1.05rem] leading-relaxed text-cream/70">
@@ -84,7 +81,7 @@ export default async function HomePage() {
       {/* ---------------- PERCORSI DI SAPORI ---------------- */}
       <section className="overflow-hidden bg-ink pb-20 md:pb-36">
         <header className="mx-auto max-w-7xl px-6 md:px-10">
-          <Ornament className="max-w-[12rem]" />
+          <Ornament />
           <Reveal as="h2" className="caps mt-7 text-[2.5rem] text-gold md:text-[4.5rem]">
             Percorsi
             <br />
@@ -207,11 +204,11 @@ export default async function HomePage() {
 
       {/* ---------------- PRENOTA ---------------- */}
       {s.booking.enabled && (
-        <section className="bg-ink-2 md:px-10 md:py-32">
+        <section className="bg-ink md:px-10 md:py-32">
           <div className="mx-auto grid max-w-7xl md:grid-cols-2 md:items-center md:gap-16">
             <Reveal as="figure" className="relative aspect-[16/11] overflow-hidden md:aspect-[4/5]">
               <Image src="/img/sala-mise-1600.webp" alt="Un tavolo apparecchiato al Prometeo" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
-              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink-2 to-transparent md:hidden" />
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink to-transparent md:hidden" />
             </Reveal>
             <div className="px-6 pb-20 pt-4 md:px-0 md:py-0">
               <Reveal as="p" className="label text-gold">
@@ -243,7 +240,7 @@ export default async function HomePage() {
 
       {/* ---------------- FAQ ---------------- */}
       {s.faq.length > 0 && (
-        <section className="bg-ink px-6 py-20 md:px-10 md:py-32">
+        <section className="bg-ink-2 px-6 py-20 md:px-10 md:py-32">
           <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[1fr_1.4fr] md:gap-20">
             <Reveal as="h2" className="caps text-[2.5rem] leading-[1.05] text-cream md:text-[3.5rem]">
               Domande
@@ -268,7 +265,7 @@ export default async function HomePage() {
       )}
 
       {/* ---------------- DOVE SIAMO ---------------- */}
-      <section id="contatti" className="bg-ink-2 px-6 py-20 md:px-10 md:py-32">
+      <section id="contatti" className="bg-ink px-6 pt-20 md:px-10 md:py-32">
         <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-2 md:gap-20">
           <div>
             <Reveal as="h2" className="caps text-[2.5rem] text-cream md:text-[3.5rem]">
@@ -325,7 +322,7 @@ export default async function HomePage() {
               src={`https://www.google.com/maps?q=${encodeURIComponent(`${s.address}, ${s.city}`)}&output=embed`}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              className="h-80 w-full border-0 grayscale md:h-full md:min-h-[32rem]"
+              className="h-80 w-full border-0 [filter:invert(.92)_hue-rotate(180deg)_grayscale(1)_contrast(.9)] md:h-full md:min-h-[32rem]"
             />
           </Reveal>
         </div>

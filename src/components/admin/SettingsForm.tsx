@@ -238,6 +238,9 @@ export function SettingsForm({ initial }: { initial: Settings }) {
             <FieldLabel label="Motto sotto il logo" hint="es. Accendi il gusto">
               <input value={s.tagline} onChange={(e) => up({ tagline: e.target.value })} className={smallInput} />
             </FieldLabel>
+            <FieldLabel label="Frase del footer" hint="In fondo a ogni pagina">
+              <input value={s.footerLine} onChange={(e) => up({ footerLine: e.target.value })} className={smallInput} />
+            </FieldLabel>
             <FieldLabel label="Frase grande in homepage">
               <textarea value={s.about} onChange={(e) => up({ about: e.target.value })} rows={2} className={`${smallInput} py-3`} />
             </FieldLabel>

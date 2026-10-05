@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { useEffect } from "react";
 import { ALLERGENS, tagLabel } from "@/lib/catalog";
@@ -97,10 +96,6 @@ export function DishSheet({ dish, onClose }: { dish: Dish | null; onClose: () =>
                     : "Chiedi al personale di sala: ti indicheremo gli allergeni presenti in ogni piatto."}
                 </p>
               </div>
-
-              <Link href="/prenota" onClick={onClose} className="btn btn-gold mt-7 w-full">
-                Prenota un tavolo
-              </Link>
             </div>
           </motion.div>
         </div>

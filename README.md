@@ -49,6 +49,12 @@ Crea un account [Resend](https://resend.com), verifica il dominio e imposta `RES
 | **Menu** | categorie e piatti: foto (ridimensionate nel browser, anche scattate dal telefono), descrizione, prezzo, allergeni UE, vegetariano/vegano/senza glutine, “firma dello chef” (in home), nascondi, esaurito, ordine |
 | **Locale e orari** | avviso in cima al sito, orari con più turni, chiusure straordinarie, regole prenotazioni (coperti per orario, intervallo, preavviso, conferma automatica), contatti, testi, recensioni |
 
+## Menu al tavolo (QR)
+
+`/qr` è il menu per chi è già seduto: niente tasti di prenotazione, niente barra “Chiama/Prenota”, non indicizzato da Google.
+Il QR da stampare si scarica da **Admin → Menu** (PNG o SVG per la tipografia). Generarlo **dopo** aver impostato `NEXT_PUBLIC_SITE_URL` con il dominio definitivo.
+Il menu pubblico `/menu` ha un solo invito a prenotare, in fondo alla pagina.
+
 ## Come funziona la prenotazione
 
 1. **Persone** → 2. **Giorno** (Oggi / Domani / calendario, giorni chiusi disattivati) → 3. **Orario** (solo quelli con posti liberi) → 4. **Nome e telefono**.
@@ -82,7 +88,7 @@ scripts/               seed Supabase
 | Estratti di recensioni (Annalisa P., Cosimo L., Rossana R.) | Tripadvisor, giugno–settembre 2026 — da verificare e aggiornare dall'admin |
 | Domande frequenti | risposte basate sui servizi indicati su TheFork e sul funzionamento del sito |
 
-Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione e le didascalie delle foto.
+Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione, le didascalie delle foto e la frase del footer “Ti aspettiamo sotto la nostra luna.” (modificabile dall'admin).
 
 ## Design
 

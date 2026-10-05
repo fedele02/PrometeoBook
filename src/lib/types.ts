@@ -46,6 +46,8 @@ export type Settings = {
   about: string;
   /** paragraph under the quote */
   intro: string;
+  /** short line in the footer */
+  footerLine: string;
   address: string;
   city: string;
   mapsUrl: string;

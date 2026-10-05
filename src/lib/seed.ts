@@ -21,10 +21,12 @@ const lunchDinner = {
 export const seedSettings: Settings = {
   name: "Prometeo",
   subtitle: "Fine Dining",
-  tagline: "Accendi il gusto",
+  // from the printed menu
+  tagline: "Tradizione rubata alla fiamma. Eccellenza servita al palato.",
   about: "Prometeo donò il fuoco agli uomini, noi abbiamo donato loro il gusto.",
   intro:
     "Cucina tradizionale rivisitata nel cuore di Matera. Lasciati guidare alla scoperta della nostra selezione d'eccellenza e delle tradizioni locali.",
+  footerLine: "Ti aspettiamo sotto la nostra luna.",
   address: "Via Michele Torraca, 10",
   city: "75100 Matera",
   mapsUrl: "https://maps.google.com/?q=Prometeo+Fine+Dining+Via+Michele+Torraca+10+Matera",

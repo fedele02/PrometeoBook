@@ -40,7 +40,7 @@ export function Hero({ tagline, bookingEnabled, rating }: Props) {
           </span>
         </h1>
 
-        <p className="mt-6 font-serif text-[1.75rem] italic leading-none text-cream md:mt-8 md:text-4xl">
+        <p className="mt-6 max-w-[22rem] font-serif text-[1.55rem] italic leading-[1.2] text-cream md:mt-8 md:max-w-xl md:text-[2.1rem]">
           {tagline}
         </p>
 

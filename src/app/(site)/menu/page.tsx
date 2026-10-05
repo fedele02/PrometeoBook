@@ -17,7 +17,7 @@ export default async function MenuPage() {
       <section className="bg-ink px-6 pb-10 pt-32 text-center md:pb-14 md:pt-44">
         <p className="label text-[0.7rem] text-muted">Prometeo Fine Dining</p>
         <h1 className="caps mt-4 text-[3.2rem] text-gold md:text-[5rem]">Menu</h1>
-        <Ornament className="mx-auto mt-5 w-48" />
+        <Ornament align="center" className="mt-5" />
         <p className="mt-5 font-serif text-xl italic text-cream/80">Cucina tradizionale rivisitata</p>
       </section>
 
@@ -28,12 +28,7 @@ export default async function MenuPage() {
       )}
 
       <section className="px-6 pb-32 pt-16 text-center md:pb-24">
-        <p className="caps mx-auto max-w-md text-[1.05rem] leading-snug tracking-[0.08em] text-gold">
-          Tradizione rubata alla fiamma.
-          <br />
-          Eccellenza servita al palato.
-        </p>
-        <p className="mx-auto mt-8 max-w-md text-sm text-muted">
+        <p className="mx-auto max-w-md text-sm text-muted">
           Allergie o intolleranze? Comunicacele al momento della prenotazione o chiedi al personale di sala.
         </p>
         {settings.booking.enabled && (

@@ -10,7 +10,16 @@ import { DishSheet } from "./DishSheet";
 /** vegan dishes are vegetarian too */
 const matches = (d: Dish, f: string) => d.tags.includes(f) || (f === "vegetariano" && d.tags.includes("vegano"));
 
-export function MenuView({ categories, dishes }: { categories: Category[]; dishes: Dish[] }) {
+export function MenuView({
+  categories,
+  dishes,
+  stickyTop = "top-[var(--header-h,4rem)]",
+}: {
+  categories: Category[];
+  dishes: Dish[];
+  /** where the category bar sticks: under the site header, or at the very top on the QR page */
+  stickyTop?: string;
+}) {
   const [filter, setFilter] = useState<string | null>(null);
   const [active, setActive] = useState(categories[0]?.id);
   const [open, setOpen] = useState<Dish | null>(null);
@@ -61,13 +70,15 @@ export function MenuView({ categories, dishes }: { categories: Category[]; dishe
 
   const jump = (id: string) => {
     const el = document.getElementById(`cat-${id}`);
-    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 140, behavior: "smooth" });
+    const bar = navRef.current?.parentElement;
+    const offset = (bar?.getBoundingClientRect().bottom ?? 140) + 16;
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: "smooth" });
   };
 
   return (
     <>
       {/* sticky category tabs */}
-      <div className="sticky top-[var(--header-h,4rem)] z-30 border-y border-line bg-ink">
+      <div className={`sticky ${stickyTop} z-30 border-b border-line bg-ink`}>
         <div ref={navRef} className="no-scrollbar mx-auto flex max-w-4xl justify-start gap-8 overflow-x-auto px-6 sm:justify-center">
           {visibleCats.map((c) => (
             <button

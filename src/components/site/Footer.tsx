@@ -12,15 +12,15 @@ export function Footer({ settings: s }: { settings: Settings }) {
   ].filter(Boolean) as { href: string; label: string }[];
 
   return (
-    <footer className="border-t border-line bg-ink pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-14 md:pb-12 md:pt-16">
+    <footer className="bg-ink pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-14 md:pb-12 md:pt-16">
       <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-12 md:px-10">
-        <div className="flex items-end justify-between md:block">
+        <div>
           <div className="text-gold">
             <Emblem className="h-12 w-auto md:h-14" />
             <Wordmark className="mt-4 h-4 w-auto md:mt-5 md:h-5" />
             <p className="font-display mt-2 text-[0.55rem] tracking-[0.5em]">FINE DINING</p>
           </div>
-          <p className="font-serif text-lg italic text-cream/70 md:mt-6">{s.tagline}</p>
+          {s.footerLine && <p className="mt-6 font-serif text-xl italic leading-snug text-cream/75">{s.footerLine}</p>}
         </div>
 
         <div className="hidden md:block">

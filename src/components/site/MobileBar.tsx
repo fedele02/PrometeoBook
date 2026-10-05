@@ -21,7 +21,8 @@ export function MobileBar({ phone, bookingEnabled }: { phone: string; bookingEna
     return () => removeEventListener("scroll", on);
   }, []);
 
-  if (pathname.startsWith("/prenota") || (!bookingEnabled && !phone)) return null;
+  // not on the booking page, nor on the menu (people may be reading it at the table)
+  if (pathname.startsWith("/prenota") || pathname.startsWith("/menu") || (!bookingEnabled && !phone)) return null;
   const show = pathname !== "/" || past;
 
   return (
