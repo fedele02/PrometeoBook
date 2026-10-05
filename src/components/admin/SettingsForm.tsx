@@ -35,7 +35,12 @@ export function SettingsForm({ initial }: { initial: Settings }) {
 
   const save = () =>
     start(async () => {
-      const clean = { ...s, features: s.features.map((f) => f.trim()).filter(Boolean) };
+      const clean = {
+        ...s,
+        features: s.features.map((f) => f.trim()).filter(Boolean),
+        reviews: s.reviews.filter((r) => r.quote.trim() && r.author.trim()),
+        faq: s.faq.filter((f) => f.q.trim() && f.a.trim()),
+      };
       const res = await saveSettingsAction(clean);
       if (res.ok) {
         setS(clean);
@@ -248,6 +253,86 @@ export function SettingsForm({ initial }: { initial: Settings }) {
                 className={`${smallInput} py-3`}
               />
             </FieldLabel>
+          </div>
+        </Card>
+
+        {/* ---------- reviews ---------- */}
+        <Card>
+          <h2 className="font-display text-lg tracking-[0.06em]">Recensioni in homepage</h2>
+          <p className="mt-1 text-sm text-cream/55">Brevi estratti di recensioni vere, con nome e piattaforma (es. Tripadvisor, TheFork, Google).</p>
+          <div className="mt-5 space-y-4">
+            {s.reviews.map((r, i) => (
+              <div key={i} className="space-y-3 rounded-md border border-white/10 p-4">
+                <textarea
+                  value={r.quote}
+                  onChange={(e) => up({ reviews: s.reviews.map((x, k) => (k === i ? { ...x, quote: e.target.value } : x)) })}
+                  rows={2}
+                  maxLength={300}
+                  placeholder="Testo della recensione"
+                  className={`${smallInput} py-3`}
+                />
+                <div className="flex gap-2">
+                  <input
+                    value={r.author}
+                    onChange={(e) => up({ reviews: s.reviews.map((x, k) => (k === i ? { ...x, author: e.target.value } : x)) })}
+                    placeholder="Nome (es. Anna P.)"
+                    className={smallInput}
+                  />
+                  <input
+                    value={r.source}
+                    onChange={(e) => up({ reviews: s.reviews.map((x, k) => (k === i ? { ...x, source: e.target.value } : x)) })}
+                    placeholder="Piattaforma"
+                    className={smallInput}
+                  />
+                  <button onClick={() => up({ reviews: s.reviews.filter((_, k) => k !== i) })} className={iconBtn} aria-label="Rimuovi recensione">
+                    <IconTrash className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {s.reviews.length < 12 && (
+              <button
+                onClick={() => up({ reviews: [...s.reviews, { quote: "", author: "", source: "Tripadvisor" }] })}
+                className="flex items-center gap-1.5 text-sm font-semibold text-gold-light"
+              >
+                <IconPlus className="h-4 w-4" /> Aggiungi recensione
+              </button>
+            )}
+          </div>
+        </Card>
+
+        {/* ---------- faq ---------- */}
+        <Card>
+          <h2 className="font-display text-lg tracking-[0.06em]">Domande frequenti</h2>
+          <p className="mt-1 text-sm text-cream/55">Compaiono in homepage e su Google.</p>
+          <div className="mt-5 space-y-4">
+            {s.faq.map((f, i) => (
+              <div key={i} className="space-y-3 rounded-md border border-white/10 p-4">
+                <div className="flex gap-2">
+                  <input
+                    value={f.q}
+                    onChange={(e) => up({ faq: s.faq.map((x, k) => (k === i ? { ...x, q: e.target.value } : x)) })}
+                    placeholder="Domanda"
+                    className={smallInput}
+                  />
+                  <button onClick={() => up({ faq: s.faq.filter((_, k) => k !== i) })} className={iconBtn} aria-label="Rimuovi domanda">
+                    <IconTrash className="h-4 w-4" />
+                  </button>
+                </div>
+                <textarea
+                  value={f.a}
+                  onChange={(e) => up({ faq: s.faq.map((x, k) => (k === i ? { ...x, a: e.target.value } : x)) })}
+                  rows={2}
+                  placeholder="Risposta"
+                  className={`${smallInput} py-3`}
+                />
+              </div>
+            ))}
+            {s.faq.length < 20 && (
+              <button onClick={() => up({ faq: [...s.faq, { q: "", a: "" }] })} className="flex items-center gap-1.5 text-sm font-semibold text-gold-light">
+                <IconPlus className="h-4 w-4" /> Aggiungi domanda
+              </button>
+            )}
           </div>
         </Card>
 

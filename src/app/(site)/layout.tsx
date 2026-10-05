@@ -1,5 +1,5 @@
 import { getPublicContent } from "@/lib/data";
-import { RevealObserver } from "@/components/RevealObserver";
+import { MotionProvider } from "@/components/motion/Reveal";
 import { Footer } from "@/components/site/Footer";
 import { MobileBar } from "@/components/site/MobileBar";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -9,7 +9,7 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
   const booking = settings.booking.enabled;
 
   return (
-    <>
+    <MotionProvider>
       <SiteHeader
         bookingEnabled={booking}
         announcement={settings.announcement.enabled ? settings.announcement.text : ""}
@@ -19,7 +19,6 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
       <main>{children}</main>
       <Footer settings={settings} />
       <MobileBar phone={settings.phone} bookingEnabled={booking} />
-      <RevealObserver />
-    </>
+    </MotionProvider>
   );
 }

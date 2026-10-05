@@ -56,6 +56,9 @@ export type Settings = {
   instagram: string;
   facebook: string;
   rating: { score: string; count: string; source: string; url: string };
+  /** short excerpts of real guest reviews, with author and platform */
+  reviews: { quote: string; author: string; source: string }[];
+  faq: { q: string; a: string }[];
   features: string[];
   hours: WeekHours;
   closures: Closure[];

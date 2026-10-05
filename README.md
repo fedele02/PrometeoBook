@@ -79,6 +79,8 @@ scripts/               seed Supabase
 | Descrizioni di tonno, cime di rapa, filetto, cannolo, sporcamuss, tagliatelle, capuntini, cuore di baccalà, polpo | testi dei post Facebook (leggermente accorciati) |
 | Telefoni ed email | pagina Facebook (sezione Informazioni) e locandina di Ferragosto |
 | Voto 9,8/10 e 392 recensioni, km 0, tavoli all'aperto, cani ammessi, opzioni vegetariane | TheFork |
+| Estratti di recensioni (Annalisa P., Cosimo L., Rossana R.) | Tripadvisor, giugno–settembre 2026 — da verificare e aggiornare dall'admin |
+| Domande frequenti | risposte basate sui servizi indicati su TheFork e sul funzionamento del sito |
 
 Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione e le didascalie delle foto.
 
@@ -87,7 +89,10 @@ Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i
 - Direzione presa dal materiale del ristorante: nero, oro del logo, capitali “romane” (Cinzel) come l'insegna, testo sans (Hanken Grotesk), linee sottili con la fiamma.
 - **Mobile first**: verificato su 320×568, 360×640, 360×780, 375×667, 390×844, 412×915, 430×932, telefono in orizzontale, tablet e desktop.
 - I “Percorsi di sapori” sul telefono sono un percorso orizzontale da sfogliare (pattern *Horizontal Scroll Journey*), su desktop si alternano a destra e sinistra.
-- Skill di design **UI UX Pro Max** installata in `.claude/skills/ui-ux-pro-max` (usata per design system, regole touch/accessibilità e audit).
+- Skill di design **UI UX Pro Max** installata in `.claude/skills/ui-ux-pro-max`; il design system è in `design-system/prometeo-fine-dining/MASTER.md` (generato dalla skill e adattato al brand, con le scelte scartate e il perché).
+- Animazioni con **Motion** (`src/components/motion/Reveal.tsx`): fade + slide-up e stagger, rispettano “riduci movimento”.
+- Home tutta scura con toni alternati (`ink` / `ink-2`), niente salti chiaro/scuro; carta chiara solo nella pagina Prenota.
+- Lighthouse mobile (build di produzione, rete 4G simulata): Accessibilità, Best practice e SEO 100 su home, menu e prenota; Performance 85–92 a seconda della pagina e del giro (LCP reale misurato 0,2–0,3 s).
 
 ## Da completare con il cliente
 

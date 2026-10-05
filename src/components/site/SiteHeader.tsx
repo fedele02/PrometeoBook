@@ -63,7 +63,7 @@ export function SiteHeader({
       )}
       <div
         className={`relative z-10 transition-colors duration-500 ${announcement ? "" : "pt-[env(safe-area-inset-top)]"} ${
-          solid ? "border-b border-line bg-ink" : "border-b border-transparent bg-gradient-to-b from-black/60 to-transparent"
+          !solid ? "bg-transparent" : pathname === "/" ? "bg-ink/90 backdrop-blur-md" : "bg-ink"
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-20 md:px-10">

@@ -3,12 +3,14 @@ import { Cinzel, Cormorant_Garamond, Hanken_Grotesk } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"], weight: ["400", "500", "600"] });
+const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"], weight: ["400"] });
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400"],
   style: ["normal", "italic"],
+  // the hero tagline is the largest text on phones: never wait for this font to paint it
+  display: "optional",
 });
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"] });
 
@@ -37,15 +39,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="it"
-      className={`${cinzel.variable} ${cormorant.variable} ${hanken.variable}`}
-      suppressHydrationWarning
-    >
-      <head>
-        {/* scroll reveals only when JS runs: without it, everything stays visible */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
-      </head>
+    <html lang="it" className={`${cinzel.variable} ${cormorant.variable} ${hanken.variable}`}>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

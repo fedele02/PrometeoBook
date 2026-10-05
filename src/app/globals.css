@@ -181,20 +181,6 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-
-  /* gentle reveal on scroll (components/RevealObserver) */
-  .js [data-reveal] {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-    transition:
-      opacity 0.9s var(--ease-out-expo),
-      transform 0.9s var(--ease-out-expo);
-    transition-delay: var(--d, 0ms);
-  }
-  .js [data-reveal].is-in {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 @keyframes hero-zoom {
@@ -230,9 +216,5 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-  .js [data-reveal] {
-    opacity: 1;
-    transform: none;
   }
 }

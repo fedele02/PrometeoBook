@@ -40,6 +40,41 @@ export const seedSettings: Settings = {
     source: "TheFork",
     url: "https://www.thefork.it/ristorante/prometeo-fine-dining-r860721",
   },
+  // excerpts of public Tripadvisor reviews (Jun–Sep 2026): verify and keep up to date from the admin
+  reviews: [
+    {
+      quote: "Qualità del servizio, qualità delle materie prime, qualità della tecnica.",
+      author: "Annalisa P.",
+      source: "Tripadvisor",
+    },
+    {
+      quote: "Un'esperienza di cucina locale rivisitata in chiave contemporanea.",
+      author: "Cosimo L.",
+      source: "Tripadvisor",
+    },
+    {
+      quote: "Per la terza volta siamo tornati in questo ristorante e, ancora una volta, ne siamo usciti pienamente soddisfatti!",
+      author: "Rossana R.",
+      source: "Tripadvisor",
+    },
+  ],
+  faq: [
+    {
+      q: "Come posso prenotare?",
+      a: "Online, in pochi secondi, dalla pagina Prenota: scegli persone, giorno e orario. Oppure chiamaci.",
+    },
+    {
+      q: "Siamo un gruppo numeroso, possiamo prenotare?",
+      a: "Online puoi prenotare fino a 10 persone. Per gruppi più numerosi chiamaci: organizziamo insieme la serata.",
+    },
+    {
+      q: "Come segnalo allergie o intolleranze?",
+      a: "Scrivile nelle richieste particolari quando prenoti, oppure dillo al personale di sala: ti indicheremo gli allergeni di ogni piatto.",
+    },
+    { q: "Ci sono opzioni vegetariane?", a: "Sì, nel menu ci sono piatti vegetariani: chiedi al personale per un consiglio." },
+    { q: "Avete tavoli all'aperto?", a: "Sì, nella bella stagione ci sono tavoli all'aperto su via Michele Torraca." },
+    { q: "Posso venire con il mio cane?", a: "Sì, i cani sono i benvenuti." },
+  ],
   features: ["Ingredienti a km 0", "Tavoli all'aperto", "Opzioni vegetariane", "Cani ammessi"],
   hours: [
     lunchDinner, // domenica
