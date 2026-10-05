@@ -4,18 +4,26 @@ import { telHref } from "@/lib/site";
 import type { Settings } from "@/lib/types";
 import { Emblem, Wordmark } from "../Logo";
 
+/** Phones get a compact footer (contacts are right above); desktop the full columns. */
 export function Footer({ settings: s }: { settings: Settings }) {
+  const social = [
+    s.facebook && { href: s.facebook, label: "Facebook" },
+    s.instagram && { href: s.instagram, label: "Instagram" },
+  ].filter(Boolean) as { href: string; label: string }[];
+
   return (
-    <footer className="border-t border-line bg-ink pb-28 pt-16 md:pb-12">
-      <div className="mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:px-10">
-        <div className="text-gold">
-          <Emblem className="h-14 w-auto" />
-          <Wordmark className="mt-5 h-5 w-auto" />
-          <p className="font-display mt-2 text-[0.6rem] tracking-[0.5em]">FINE DINING</p>
-          <p className="mt-6 max-w-xs font-serif text-lg italic text-cream/70">{s.tagline}</p>
+    <footer className="border-t border-line bg-ink pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-14 md:pb-12 md:pt-16">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-12 md:px-10">
+        <div className="flex items-end justify-between md:block">
+          <div className="text-gold">
+            <Emblem className="h-12 w-auto md:h-14" />
+            <Wordmark className="mt-4 h-4 w-auto md:mt-5 md:h-5" />
+            <p className="font-display mt-2 text-[0.55rem] tracking-[0.5em]">FINE DINING</p>
+          </div>
+          <p className="font-serif text-lg italic text-cream/70 md:mt-6">{s.tagline}</p>
         </div>
 
-        <div>
+        <div className="hidden md:block">
           <h2 className="label text-gold">Dove</h2>
           <address className="mt-4 not-italic leading-relaxed text-cream/80">
             <a href={s.mapsUrl} target="_blank" rel="noopener" className="hover:text-gold">
@@ -26,7 +34,7 @@ export function Footer({ settings: s }: { settings: Settings }) {
           </address>
         </div>
 
-        <div>
+        <div className="hidden md:block">
           <h2 className="label text-gold">Contatti</h2>
           <ul className="mt-4 space-y-1 text-cream/80">
             {[s.phone, s.phone2].filter(Boolean).map((p) => (
@@ -38,29 +46,15 @@ export function Footer({ settings: s }: { settings: Settings }) {
             ))}
             {s.email && (
               <li>
-                <a href={`mailto:${s.email}`} className="break-all hover:text-gold">
+                <a href={`mailto:${s.email}`} className="[overflow-wrap:anywhere] hover:text-gold">
                   {s.email}
-                </a>
-              </li>
-            )}
-            {s.facebook && (
-              <li>
-                <a href={s.facebook} target="_blank" rel="noopener" className="hover:text-gold">
-                  Facebook
-                </a>
-              </li>
-            )}
-            {s.instagram && (
-              <li>
-                <a href={s.instagram} target="_blank" rel="noopener" className="hover:text-gold">
-                  Instagram
                 </a>
               </li>
             )}
           </ul>
         </div>
 
-        <div>
+        <div className="hidden md:block">
           <h2 className="label text-gold">Orari</h2>
           <ul className="mt-4 space-y-1 text-cream/80">
             {hoursSummary(s).map((g) => (
@@ -76,16 +70,19 @@ export function Footer({ settings: s }: { settings: Settings }) {
         </div>
       </div>
 
-      <div className="mx-auto mt-14 flex max-w-7xl flex-col gap-2 border-t border-line px-6 pt-6 text-xs text-muted md:flex-row md:justify-between md:px-10">
-        <p>© {new Date().getFullYear()} Prometeo Fine Dining · Matera</p>
-        <p className="flex gap-6">
-          <Link href="/privacy" className="hover:text-cream">
-            Privacy
-          </Link>
-          <Link href="/admin" prefetch={false} className="hover:text-cream">
-            Area riservata
-          </Link>
-        </p>
+      <div className="mx-auto mt-10 flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 border-t border-line px-6 pt-6 text-sm text-muted md:mt-14 md:px-10">
+        <p className="w-full md:w-auto md:flex-1">© {new Date().getFullYear()} Prometeo Fine Dining · Matera</p>
+        {social.map((x) => (
+          <a key={x.href} href={x.href} target="_blank" rel="noopener" className="py-2 hover:text-cream">
+            {x.label}
+          </a>
+        ))}
+        <Link href="/privacy" className="py-2 hover:text-cream">
+          Privacy
+        </Link>
+        <Link href="/admin" prefetch={false} className="py-2 hover:text-cream">
+          Area riservata
+        </Link>
       </div>
     </footer>
   );

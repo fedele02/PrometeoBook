@@ -45,3 +45,5 @@ next-env.d.ts
 /_ref
 /data/local-db.json
 /public/uploads
+
+__pycache__/

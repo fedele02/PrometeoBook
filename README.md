@@ -80,7 +80,14 @@ scripts/               seed Supabase
 | Telefoni ed email | pagina Facebook (sezione Informazioni) e locandina di Ferragosto |
 | Voto 9,8/10 e 392 recensioni, km 0, tavoli all'aperto, cani ammessi, opzioni vegetariane | TheFork |
 
-Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione e le didascalie brevi.
+Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione e le didascalie delle foto.
+
+## Design
+
+- Direzione presa dal materiale del ristorante: nero, oro del logo, capitali “romane” (Cinzel) come l'insegna, testo sans (Hanken Grotesk), linee sottili con la fiamma.
+- **Mobile first**: verificato su 320×568, 360×640, 360×780, 375×667, 390×844, 412×915, 430×932, telefono in orizzontale, tablet e desktop.
+- I “Percorsi di sapori” sul telefono sono un percorso orizzontale da sfogliare (pattern *Horizontal Scroll Journey*), su desktop si alternano a destra e sinistra.
+- Skill di design **UI UX Pro Max** installata in `.claude/skills/ui-ux-pro-max` (usata per design system, regole touch/accessibilità e audit).
 
 ## Da completare con il cliente
 

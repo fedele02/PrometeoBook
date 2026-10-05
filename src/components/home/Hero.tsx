@@ -1,9 +1,16 @@
 import { getImageProps } from "next/image";
 import Link from "next/link";
-import { Emblem, Ornament, Wordmark } from "../Logo";
+import { IconArrow, IconStar } from "../Icons";
+import { Emblem, Wordmark } from "../Logo";
+
+type Props = {
+  tagline: string;
+  bookingEnabled: boolean;
+  rating: { score: string; count: string; source: string };
+};
 
 /** Full-screen photo of the dining room, portrait crop on phones. */
-export function Hero({ tagline, address, bookingEnabled }: { tagline: string; address: string; bookingEnabled: boolean }) {
+export function Hero({ tagline, bookingEnabled, rating }: Props) {
   const common = { alt: "La sala del Prometeo con la luna illuminata", sizes: "100vw", quality: 75, priority: true };
   const {
     props: { srcSet: desktop },
@@ -11,48 +18,52 @@ export function Hero({ tagline, address, bookingEnabled }: { tagline: string; ad
   const {
     props: { srcSet: mobile, ...img },
   } = getImageProps({ ...common, src: "/img/sala-tavolo-1600.webp", width: 1072, height: 1339 });
+  const d = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
   return (
-    <section className="relative flex h-[100svh] min-h-[560px] flex-col overflow-hidden bg-ink">
+    <section className="relative flex h-[100svh] min-h-[540px] flex-col overflow-hidden bg-ink">
       <picture className="absolute inset-0">
         <source media="(min-width: 768px)" srcSet={desktop} />
         <source srcSet={mobile} />
-        <img {...img} className="anim-zoom h-full w-full object-cover object-[50%_30%] md:object-center" alt={img.alt} />
+        <img {...img} className="anim-zoom h-full w-full object-cover object-[50%_25%] md:object-center" alt={img.alt} />
       </picture>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-transparent" />
       {/* the lower part, where the text sits, goes almost black */}
-      <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-ink via-ink/85 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-t from-ink via-ink/85 to-transparent" />
 
-      <div className="relative mt-auto px-6 pb-[calc(env(safe-area-inset-bottom)+2.5rem)] text-center md:pb-16">
-        <h1 className="mx-auto flex w-[min(78vw,520px)] flex-col items-center text-gold">
+      <div className="relative mx-auto mt-auto w-full max-w-7xl px-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] md:px-10 md:pb-16">
+        <h1 className="flex w-[min(74vw,480px)] flex-col text-gold [@media(max-height:640px)]:w-[min(60vw,400px)]">
           <span className="sr-only">Prometeo Fine Dining, Matera</span>
-          <Emblem className="anim-rise h-auto w-[22%]" />
-          <Wordmark className="anim-rise mt-5 h-auto w-full" title="" />
-          <span
-            className="anim-rise font-display mt-3 text-[clamp(0.7rem,2.6vw,1rem)] tracking-[0.55em]"
-            style={{ "--d": "120ms" } as React.CSSProperties}
-          >
+          <Emblem className="anim-rise h-auto w-[19%]" />
+          <Wordmark className="anim-rise mt-4 h-auto w-full" title="" />
+          <span className="anim-rise font-display mt-2.5 whitespace-nowrap text-[clamp(0.66rem,2.6vw,0.95rem)] tracking-[0.62em]" style={d(100)}>
             FINE DINING
           </span>
         </h1>
-        <Ornament className="anim-rise mx-auto mt-6 w-48" />
-        <p className="anim-rise mt-5 font-serif text-[1.6rem] italic text-cream md:text-3xl" style={{ "--d": "220ms" } as React.CSSProperties}>
+
+        <p className="anim-rise mt-6 font-serif text-[1.75rem] italic leading-none text-cream md:mt-8 md:text-4xl" style={d(200)}>
           {tagline}
         </p>
-        <div
-          className="anim-rise mx-auto mt-8 flex max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center"
-          style={{ "--d": "320ms" } as React.CSSProperties}
-        >
+
+        <div className="anim-rise mt-8 flex flex-wrap items-center gap-x-8 gap-y-5 [@media(max-height:640px)]:mt-5" style={d(300)}>
           {bookingEnabled && (
-            <Link href="/prenota" className="btn btn-gold">
+            <Link href="/prenota" className="btn btn-gold w-full sm:w-auto">
               Prenota un tavolo
             </Link>
           )}
-          <Link href="/menu" className="btn btn-line text-cream">
-            Il menu
+          <Link href="/menu" className="link-arrow text-cream">
+            Scopri il menu <IconArrow className="h-4 w-4" />
           </Link>
         </div>
-        <p className="label mt-8 text-[0.68rem] text-cream/60">{address}</p>
+
+        {rating.score && (
+          <p className="anim-rise mt-8 flex items-center gap-2 text-sm text-cream/70 [@media(max-height:640px)]:hidden" style={d(400)}>
+            <IconStar className="h-4 w-4 text-gold" />
+            <span>
+              <b className="font-semibold text-cream">{rating.score}/10</b> su {rating.source} · {rating.count} recensioni
+            </span>
+          </p>
+        )}
       </div>
     </section>
   );

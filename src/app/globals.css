@@ -57,6 +57,13 @@
   button {
     cursor: pointer;
   }
+  /* no double-tap zoom delay on phones */
+  a,
+  button,
+  label,
+  summary {
+    touch-action: manipulation;
+  }
   img {
     -webkit-user-drag: none;
   }
@@ -100,6 +107,9 @@
   .btn-gold {
     background: var(--color-gold);
     color: var(--color-ink);
+  }
+  .btn:active {
+    opacity: 0.85;
   }
   .btn-gold:hover {
     background: var(--color-gold-light);
