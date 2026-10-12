@@ -1,1 +1,22 @@
-{"0": "Prenotazione e validazione", "1": "Azioni server dell'admin", "2": "Layout radice e configurazione", "3": "Documentazione, design system e regole", "4": "Navigazione admin e icone", "5": "Dipendenze e strumenti", "6": "Dati iniziali e notifiche", "7": "Accesso admin", "8": "Configurazione TypeScript", "9": "Dipendenze e strumenti (2)", "10": "Documentazione, design system e regole (2)", "11": "Configurazione PostCSS", "12": "Comunità 1", "13": "Documentazione, design system e regole (3)"}
+{
+  "0": "BookingsBoard.tsx",
+  "1": "gestore-prometeo-2026/actions.ts",
+  "2": "BookingWizard.tsx",
+  "3": "app/layout.tsx",
+  "4": "Icons.tsx",
+  "5": "package.json",
+  "6": "MenuView.tsx",
+  "7": "auth.ts",
+  "8": "compilerOptions",
+  "9": "index.ts",
+  "10": "Stack: Next.js 16, React 19, Tailwind v4, Motion, Supabase, Vercel",
+  "11": "postcss.config.mjs",
+  "12": "CLAUDE.md",
+  "13": "README - Prometeo Fine Dining sito web",
+  "14": "types.ts",
+  "15": "next",
+  "16": "schema.sql",
+  "17": "Design System MASTER.md (prometeo-fine-dining)",
+  "18": "2026-10-13_app-gestione.sql",
+  "19": "public.whatsapp_messages"
+}
