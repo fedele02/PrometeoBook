@@ -1,23 +1,36 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createBookingAction } from "@/app/gestore-prometeo-2026/actions";
-import { FieldLabel, Modal, smallInput } from "./ui";
+import { createBookingAction, type AnswerResult } from "@/app/gestore-prometeo-2026/actions";
+import { FieldLabel, Modal, smallInput, Toggle } from "./ui";
 
 /** Bookings taken by phone: already confirmed, no capacity limit (the staff decides). */
-export function PhoneBookingModal({ open, date, onClose, onDone }: { open: boolean; date: string; onClose: () => void; onDone: () => void }) {
+export function PhoneBookingModal({
+  open,
+  date,
+  waAuto,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  date: string;
+  waAuto: boolean;
+  onClose: () => void;
+  onDone: (res: AnswerResult) => void;
+}) {
   const [f, setF] = useState({ date, time: "20:00", people: 2, name: "", phone: "", notes: "" });
+  const [sendWhatsapp, setSendWhatsapp] = useState(true);
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
   const set = (k: keyof typeof f, v: string | number) => setF((x) => ({ ...x, [k]: v }));
 
   const save = () =>
     start(async () => {
-      const res = await createBookingAction(f);
+      const res = await createBookingAction({ ...f, sendWhatsapp: waAuto && sendWhatsapp });
       if (res.ok) {
         setF((x) => ({ ...x, name: "", phone: "", notes: "" }));
         setError("");
-        onDone();
+        onDone(res);
       } else setError(res.error);
     });
 
@@ -55,6 +68,14 @@ export function PhoneBookingModal({ open, date, onClose, onDone }: { open: boole
         <FieldLabel label="Note">
           <textarea value={f.notes} onChange={(e) => set("notes", e.target.value)} rows={2} className={`${smallInput} py-3`} />
         </FieldLabel>
+        {waAuto && (
+          <Toggle
+            checked={sendWhatsapp}
+            onChange={setSendWhatsapp}
+            label="Invia la conferma su WhatsApp"
+            hint="Il cliente riceve il messaggio di conferma con il link per modificare o annullare"
+          />
+        )}
         <p className="text-sm text-cream/55">Le prenotazioni inserite qui sono già confermate e non contano il limite di coperti.</p>
         {error && <p className="rounded-xl bg-ember/15 px-4 py-3 text-sm">{error}</p>}
       </div>

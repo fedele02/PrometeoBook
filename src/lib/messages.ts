@@ -1,24 +1,14 @@
 /**
- * WhatsApp messages the staff sends to guests. Written by us: TO BE APPROVED by the restaurant
- * (see README, "Da completare con il cliente"). The staff can still edit them before sending.
+ * WhatsApp messages to guests: the values that fill the approved templates
+ * (src/lib/whatsapp/templates.ts) and the very same text when the staff sends it by hand.
+ * Texts TO BE APPROVED by the restaurant (see README, "Da completare con il cliente").
  */
 import { SITE_URL } from "./site";
 import { formatDateLong } from "./time";
-import type { Booking, Settings } from "./types";
+import type { Booking, Settings, WhatsappKind, WhatsappStatus } from "./types";
+import { DECLINE_REASON_TEXT, renderMessage, TEMPLATES } from "./whatsapp/templates";
 
-const firstName = (name: string) => name.trim().split(/\s+/)[0];
-const guests = (n: number) => `${n} ${n === 1 ? "persona" : "persone"}`;
-export const manageUrl = (b: Pick<Booking, "manage_token">) => `${SITE_URL}/prenotazione/${b.manage_token}`;
-
-export function acceptMessage(b: Booking, s: Settings) {
-  return (
-    `Buongiorno ${firstName(b.name)}, confermiamo la sua prenotazione al ${s.name} ${s.subtitle} ` +
-    `per ${formatDateLong(b.date)} alle ${b.time}, ${guests(b.people)}.\n` +
-    `Per modificarla o annullarla: ${manageUrl(b)}\nA presto!`
-  );
-}
-
-export type DeclineReason = "full" | "closed" | "group" | "custom";
+export type DeclineReason = keyof typeof DECLINE_REASON_TEXT | "custom";
 
 export const DECLINE_REASONS: { id: DeclineReason; label: string }[] = [
   { id: "full", label: "Siamo al completo a quell'ora" },
@@ -27,18 +17,41 @@ export const DECLINE_REASONS: { id: DeclineReason; label: string }[] = [
   { id: "custom", label: "Scrivo io il messaggio" },
 ];
 
-export function declineMessage(b: Booking, s: Settings, reason: DeclineReason) {
-  const when = `${formatDateLong(b.date)} alle ${b.time}`;
-  const hello = `Buongiorno ${firstName(b.name)}, ci dispiace:`;
-  const sign = `\n${s.name} ${s.subtitle}`.trimEnd();
-  switch (reason) {
-    case "full":
-      return `${hello} ${when} siamo al completo e non possiamo accettare la prenotazione per ${guests(b.people)}. Se le va, ci risponda qui e le proponiamo un altro orario.${sign}`;
-    case "closed":
-      return `${hello} ${formatDateLong(b.date)} il locale è chiuso e non possiamo accettare la prenotazione. Se le va, ci risponda qui e troviamo insieme un'altra data.${sign}`;
-    case "group":
-      return `${hello} per ${guests(b.people)} ${when} non riusciamo a garantire il servizio che meritate. Ci risponda qui o ci chiami: cerchiamo insieme la soluzione migliore.${sign}`;
-    case "custom":
-      return `Buongiorno ${firstName(b.name)}, `;
-  }
+export const manageUrl = (b: Pick<Booking, "manage_token">) => `${SITE_URL}/prenotazione/${b.manage_token}`;
+
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || name.trim();
+const guests = (n: number) => `${n} ${n === 1 ? "persona" : "persone"}`;
+const address = (s: Settings) => [s.address, s.city].filter(Boolean).join(", ");
+
+type MessageBooking = Pick<Booking, "name" | "people" | "date" | "time" | "manage_token">;
+
+/** Values for the template variables {{1}}, {{2}}… in order. */
+export function templateValues(kind: WhatsappKind, b: MessageBooking, s: Settings, reason?: DeclineReason): string[] {
+  const common = [firstName(b.name), guests(b.people), formatDateLong(b.date), b.time];
+  if (kind === "confirmed") return [...common, address(s)];
+  if (kind === "declined") return [...common, DECLINE_REASON_TEXT[reason && reason !== "custom" ? reason : "full"]];
+  return common;
 }
+
+/** The message exactly as the guest receives it: used for the preview and for sending it by hand. */
+export function whatsappText(kind: WhatsappKind, b: MessageBooking, s: Settings, reason?: DeclineReason) {
+  return renderMessage(TEMPLATES[kind], templateValues(kind, b, s, reason), SITE_URL, b.manage_token);
+}
+
+/** Start of a free-text message ("Scrivo io il messaggio"): only sent by hand. */
+export const customStart = (b: Pick<Booking, "name">) => `Buongiorno ${firstName(b.name)}, `;
+
+export const WA_KIND_LABEL: Record<WhatsappKind, string> = {
+  requested: "Richiesta ricevuta",
+  confirmed: "Conferma",
+  declined: "Rifiuto",
+  cancelled: "Annullamento",
+};
+
+export const WA_STATUS_LABEL: Record<WhatsappStatus, string> = {
+  accepted: "in invio",
+  sent: "inviato",
+  delivered: "consegnato",
+  read: "letto",
+  failed: "non inviato",
+};

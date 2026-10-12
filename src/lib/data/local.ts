@@ -4,10 +4,10 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { seedCategories, seedDishes, seedSettings } from "../seed";
 import { isActive } from "../customers";
-import type { Booking, Category, Dish, PushDevice, Settings } from "../types";
+import type { Booking, Category, Dish, PushDevice, Settings, WhatsappMessage } from "../types";
 import { SlotFullError, type Repo } from "./repo";
 
-type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[] };
+type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[]; whatsapp: WhatsappMessage[] };
 
 const DB_FILE = path.join(process.cwd(), "data", "local-db.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -26,6 +26,7 @@ async function read(): Promise<Db> {
     // settings added in later versions get their defaults
     db.settings = { ...seedSettings, ...db.settings, booking: { ...seedSettings.booking, ...db.settings.booking } };
     db.devices ??= [];
+    db.whatsapp ??= [];
     // bookings saved before guests could manage them get their private link
     for (const b of db.bookings) b.manage_token ??= randomUUID();
     return db;
@@ -36,6 +37,7 @@ async function read(): Promise<Db> {
       dishes: structuredClone(seedDishes),
       bookings: [],
       devices: [],
+      whatsapp: [],
     };
   }
 }
@@ -152,6 +154,28 @@ export const localRepo: Repo = {
       db.devices.push(d);
     }),
   deleteDevice: (id) => mutate((db) => void (db.devices = db.devices.filter((d) => d.id !== id))),
+
+  saveWhatsappMessage: (m) =>
+    mutate((db) => {
+      db.whatsapp = db.whatsapp.filter((x) => x.id !== m.id);
+      db.whatsapp.push(m);
+    }),
+  async getWhatsappMessage(match) {
+    return (await read()).whatsapp.find((x) => ("id" in match ? x.id === match.id : x.provider_id === match.providerId)) ?? null;
+  },
+  updateWhatsappMessage: (match, patch) =>
+    locked(async () => {
+      const db = await read();
+      const m = db.whatsapp.find((x) => ("id" in match ? x.id === match.id : x.provider_id === match.providerId));
+      if (!m) return null;
+      Object.assign(m, patch, { updated_at: new Date().toISOString() });
+      await write(db);
+      return m;
+    }),
+  async listWhatsappMessages(bookingIds) {
+    const ids = new Set(bookingIds);
+    return (await read()).whatsapp.filter((m) => ids.has(m.booking_id)).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  },
 
   async uploadImage(bytes, _type, ext) {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });

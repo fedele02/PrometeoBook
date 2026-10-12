@@ -8,7 +8,10 @@ import type { Settings } from "@/lib/types";
 import { IconPlus, IconTrash } from "../Icons";
 import { Card, FieldLabel, PageTitle, Toggle, iconBtn, smallInput, useToast } from "./ui";
 
-export function SettingsForm({ initial }: { initial: Settings }) {
+/** What the server knows about the WhatsApp connection (YCloud env vars). */
+export type WhatsappSetup = { configured: boolean; webhook: boolean; from: string | null };
+
+export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsapp: WhatsappSetup }) {
   const router = useRouter();
   const toast = useToast();
   const [s, setS] = useState(initial);
@@ -165,6 +168,22 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           <h2 className="font-display text-lg tracking-[0.06em]">Prenotazioni online</h2>
           <div className="mt-5 space-y-5">
             <Toggle checked={s.booking.enabled} onChange={(v) => upBooking({ enabled: v })} label="Accetta prenotazioni dal sito" />
+            <Toggle
+              checked={whatsapp.configured && s.booking.whatsappAuto}
+              disabled={!whatsapp.configured}
+              onChange={(v) => upBooking({ whatsappAuto: v })}
+              label="Messaggi WhatsApp automatici"
+              hint={
+                whatsapp.configured
+                  ? `Richiesta ricevuta, conferma, rifiuto e annullamento partono da soli dal numero ${whatsapp.from}. Se spento, l'app apre WhatsApp con il messaggio pronto.`
+                  : "Non ancora collegati (YCloud, vedi README): per ora l'app apre WhatsApp con il messaggio pronto da inviare."
+              }
+            />
+            {whatsapp.configured && !whatsapp.webhook && (
+              <p className="rounded-xl bg-ember/15 px-4 py-3 text-sm">
+                Manca il webhook di YCloud: i messaggi partono, ma l&apos;app non sa se sono stati consegnati o letti. Esegui <code>npm run whatsapp -- webhook</code> e imposta <code>YCLOUD_WEBHOOK_SECRET</code>.
+              </p>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <FieldLabel label="Coperti massimi per orario" hint="Quanti ospiti al massimo possono arrivare alla stessa ora">
                 <input type="number" min={1} value={s.booking.maxCoversPerSlot} onChange={(e) => upBooking({ maxCoversPerSlot: num(e.target.value) })} className={smallInput} />

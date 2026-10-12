@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { seedSettings } from "../seed";
-import type { Booking, Category, Dish, PushDevice, Settings } from "../types";
+import type { Booking, Category, Dish, PushDevice, Settings, WhatsappMessage } from "../types";
 import { createAdminClient } from "../supabase/admin";
 import { SlotFullError, type Repo } from "./repo";
 
@@ -154,6 +154,32 @@ export function supabaseRepo(): Repo {
     },
     async deleteDevice(id) {
       check(await db.from("push_devices").delete().eq("id", id));
+    },
+
+    async saveWhatsappMessage(m) {
+      check(await db.from("whatsapp_messages").upsert(m));
+    },
+    async getWhatsappMessage(match) {
+      const q = db.from("whatsapp_messages").select("*");
+      const res = await ("id" in match ? q.eq("id", match.id) : q.eq("provider_id", match.providerId)).maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return (res.data as WhatsappMessage | null) ?? null;
+    },
+    async updateWhatsappMessage(match, patch) {
+      const q = db.from("whatsapp_messages").update({ ...patch, updated_at: new Date().toISOString() });
+      const res = await ("id" in match ? q.eq("id", match.id) : q.eq("provider_id", match.providerId)).select().maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return (res.data as WhatsappMessage | null) ?? null;
+    },
+    async listWhatsappMessages(bookingIds) {
+      if (!bookingIds.length) return [];
+      const out: WhatsappMessage[] = [];
+      // keep URLs short: query in chunks
+      for (let i = 0; i < bookingIds.length; i += 100) {
+        const res = await db.from("whatsapp_messages").select("*").in("booking_id", bookingIds.slice(i, i + 100)).order("created_at");
+        out.push(...(check(res) as WhatsappMessage[]));
+      }
+      return out;
     },
 
     async uploadImage(bytes, contentType, ext) {

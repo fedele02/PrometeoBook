@@ -2,6 +2,7 @@ import { agoLabel, dayServices, dayStatusLine, defaultService } from "@/lib/boar
 import { guestHistory, isActive, pastVisits } from "@/lib/customers";
 import { repo } from "@/lib/data";
 import { addDays, isValidDate, romeNow } from "@/lib/time";
+import { isWhatsappAuto, whatsappByBooking } from "@/lib/whatsapp";
 import { BookingsBoard, type DayChip, type Row } from "@/components/admin/BookingsBoard";
 
 export const metadata = { title: "Prenotazioni" };
@@ -32,11 +33,13 @@ export default async function BookingsPage({ searchParams }: PageProps<"/gestore
   const days = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
 
   const ofDay = all.filter((b) => b.date === date);
+  const wa = await whatsappByBooking(ofDay.map((b) => b.id));
   const rows: Row[] = ofDay.map((b) => ({
     ...b,
     history: guestHistory(all, b, today),
     visits: pastVisits(all, b, today).length,
     ago: agoLabel(b.created_at),
+    wa: wa[b.id] ?? [],
   }));
   const services = dayServices(settings, date, ofDay);
 
@@ -51,6 +54,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/gestore
       services={services}
       initialService={defaultService(services, ofDay, date, now)}
       statusLine={dayStatusLine(settings, date, now)}
+      waAuto={isWhatsappAuto(settings)}
     />
   );
 }

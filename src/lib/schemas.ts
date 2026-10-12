@@ -43,6 +43,7 @@ export const settingsSchema = z.object({
     maxPartySize: z.number().int().min(1).max(60),
     daysAhead: z.number().int().min(1).max(365),
     minNoticeMinutes: z.number().int().min(0).max(1440),
+    whatsappAuto: z.boolean(),
   }),
   announcement: z.object({ enabled: z.boolean(), text: text(200) }),
 });
@@ -77,6 +78,8 @@ export const adminBookingSchema = z.object({
   name: text(80).min(2, "Inserisci il nome"),
   phone: text(25).min(6, "Inserisci il telefono"),
   notes: text(500),
+  /** send the WhatsApp confirmation (when the automatic messages are on) */
+  sendWhatsapp: z.boolean().default(false),
 });
 
 const FIELD_NAMES: Record<string, string> = {

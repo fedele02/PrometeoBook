@@ -23,7 +23,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 
 1. Crea un progetto su [supabase.com](https://supabase.com) (regione **EU – Frankfurt**, per il GDPR).
 2. **SQL Editor** → incolla ed esegui tutto `supabase/schema.sql` (tabelle, sicurezza RLS, funzioni di prenotazione e modifica atomiche, dispositivi per le notifiche, bucket foto `media`).
-   **Database già creato con una versione precedente?** Esegui una volta `supabase/migrations/2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`): si può rilanciare senza danni.
+   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`). Si possono rilanciare senza danni.
 3. **Project Settings → API Keys**: copia URL, *publishable key* e *secret key* in `.env.local` (vedi `.env.example`).
 4. Carica menu e impostazioni iniziali: `npm run seed:supabase`
 5. **Authentication → Users → Add user**: crea l'utente del ristorante (email + password).
@@ -51,6 +51,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
    | `NEXT_PUBLIC_SITE_URL` | per ora `https://<progetto>.vercel.app`, poi il dominio definitivo |
    | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | notifiche push dell'app Gestione: `npx web-push generate-vapid-keys` (le stesse in locale e online, altrimenti i telefoni vanno ricollegati) |
    | `VAPID_SUBJECT` | `mailto:` con l'email del ristorante (contatto per i servizi push di Google/Apple) |
+   | `YCLOUD_API_KEY`, `YCLOUD_WHATSAPP_FROM`, `YCLOUD_WEBHOOK_SECRET` | messaggi WhatsApp automatici ai clienti (vedi *Messaggi WhatsApp automatici*); senza, l'app apre WhatsApp con il messaggio pronto |
    | `RESEND_API_KEY`, `BOOKING_NOTIFY_EMAIL`, `BOOKING_FROM_EMAIL` | facoltative, email a ogni prenotazione |
 
 5. **Deploy**. Alla fine apri l'indirizzo `*.vercel.app` e prova: home, menu, una prenotazione, accesso a `/gestore-prometeo-2026` con l'utente Supabase, installazione dell'app e notifica di prova (Notifiche e app → Invia una prova).
@@ -100,7 +101,34 @@ Il numero sull'icona dell'app (dove il sistema lo supporta) e sulla scheda *Rich
 | **Locale e orari** | avviso in cima al sito, orari con più turni, chiusure straordinarie, regole prenotazioni (coperti per orario, intervallo, preavviso), contatti, testi, recensioni |
 | **Notifiche e app** | installazione, notifiche su questo dispositivo, cosa ricevere, dispositivi collegati, notifica di prova, esci |
 
-**Accetta / Rifiuta.** Lo staff non modifica le prenotazioni (lo fa solo il cliente): risponde. *Accetta* conferma e apre WhatsApp con il messaggio di conferma già scritto (con il link per modificare o annullare); *Rifiuta* apre la card con il motivo (completo, chiuso, gruppo troppo numeroso, testo libero) e il messaggio modificabile, poi WhatsApp. Il messaggio va inviato a mano: WhatsApp non permette l'invio automatico senza la Business API (account Meta a pagamento).
+**Accetta / Rifiuta.** Lo staff non modifica le prenotazioni (lo fa solo il cliente): risponde. Con YCloud collegato il messaggio al cliente parte da solo (vedi *Messaggi WhatsApp automatici*); altrimenti *Accetta* apre WhatsApp con la conferma già scritta (con il link per modificare o annullare) e *Rifiuta* apre la card con il motivo (completo, chiuso, gruppo troppo numeroso, testo libero) e il messaggio, poi WhatsApp.
+
+## Messaggi WhatsApp automatici (YCloud)
+
+Il cliente riceve **da solo**, dal numero WhatsApp del ristorante, quattro messaggi: *richiesta ricevuta* (appena prenota dal sito), *conferma* (quando lo staff tocca Accetta, anche per le telefoniche se si lascia l'opzione attiva), *richiesta non accettata* con il motivo scelto (Rifiuta) e *annullata dal ristorante*. Il numero resta anche nell'app **WhatsApp Business** sul telefono (modalità *coexistence*): lì si vedono anche i messaggi automatici e si risponde ai clienti come sempre.
+
+**Costi**: piano YCloud *Free* (0 €), più quanto fa pagare Meta per ogni messaggio automatico (modelli *utility*, circa 2–3 centesimi in Italia; verificare il listino Meta). I messaggi scritti a mano dall'app restano gratuiti.
+
+**Finché non è collegato** l'app funziona come prima: Accetta / Rifiuta aprono WhatsApp con lo stesso messaggio già scritto. In ogni momento si può spegnere da *Gestione → Locale e orari → Messaggi WhatsApp automatici*.
+
+### Attivazione (una volta)
+
+1. Il numero del ristorante deve essere su **WhatsApp Business** (app aggiornata) e in uso da qualche settimana.
+2. Su [ycloud.com](https://www.ycloud.com) crea l'account (piano Free) e collega il numero esistente scegliendo **“WhatsApp Business App coexistence”**: la procedura si conferma dall'app sul telefono con un QR code. Aggiungi su Meta il metodo di pagamento per i messaggi.
+3. YCloud → Developers → **API Keys**: crea una chiave.
+4. In `.env.local` (e poi su Vercel) imposta `YCLOUD_API_KEY`, `YCLOUD_WHATSAPP_FROM` (il numero, es. `+39333…`) e `NEXT_PUBLIC_SITE_URL` con il **dominio definitivo** (i link nei messaggi vengono fissati da Meta).
+5. `npm run whatsapp -- check` → controlla chiave e numero.
+6. `npm run whatsapp -- templates` → invia a Meta i 4 modelli (testi in `src/lib/whatsapp/templates.ts`, *da approvare* col cliente prima di inviarli). Meta li approva di solito entro 24 ore: ricontrolla con `check`.
+7. Dopo il deploy: `npm run whatsapp -- webhook` → registra `https://<dominio>/api/whatsapp/webhook` e stampa il secret: mettilo in `YCLOUD_WEBHOOK_SECRET` su Vercel e fai **Redeploy**. Senza webhook i messaggi partono lo stesso, ma l'app non sa se sono stati consegnati o letti.
+8. Facoltativo: `npm run whatsapp -- test +39…` manda una prova (messaggio reale, a pagamento).
+9. Su Supabase esegui una volta `supabase/migrations/2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`).
+
+### Come si vede nell'app
+
+- La card della richiesta dice “Il cliente riceve la risposta su WhatsApp in automatico”; *Rifiuta* mostra l'anteprima esatta del messaggio per il motivo scelto. *Scrivo io il messaggio* resta a mano (Meta permette l'invio automatico solo di testi approvati).
+- Aprendo una prenotazione in *In sala* si vedono i messaggi inviati e il loro stato: in invio, inviato ✓, consegnato ✓✓, letto ✓✓.
+- **Se un messaggio non parte o non arriva** (numero senza WhatsApp, modello non approvato, YCloud non raggiungibile…): la prenotazione resta valida, lo staff riceve una notifica push e nell'app compare **“Invia a mano”** con il testo già pronto.
+- Tutto passa dal server: la chiave YCloud non arriva mai al browser; il webhook accetta solo richieste firmate da YCloud (`YCloud-Signature`, HMAC-SHA256, scarto oltre 5 minuti).
 
 ## Menu al tavolo (QR)
 
@@ -128,11 +156,13 @@ src/components/        home, menu, booking, admin, site (header, footer), logo v
 src/lib/data/          repository: supabase.ts (produzione) | local.ts (demo)
 src/lib/time.ts        orari, turni e disponibilità (fuso Europe/Rome)
 src/lib/events.ts      cosa succede a una prenotazione → testo della notifica (push.ts la invia)
-src/lib/messages.ts    messaggi WhatsApp di conferma e rifiuto
+src/lib/messages.ts    valori e testo dei messaggi WhatsApp (uguale per invio automatico e a mano)
+src/lib/whatsapp/      modelli Meta (templates.ts), client YCloud, invio e webhook
+src/app/api/whatsapp/  webhook YCloud (stato dei messaggi)
 src/lib/pwa.ts         percorso, nome e immagini dell'app Gestione
 supabase/schema.sql    database (nuova installazione) · supabase/migrations/ per i database esistenti
 design/app-icon/       icona dell'app esportata da Penpot
-scripts/               seed Supabase, immagini dell'app (make-app-assets.ts)
+scripts/               seed Supabase, immagini dell'app (make-app-assets.ts), configurazione YCloud (whatsapp.ts)
 ```
 
 ## Da dove vengono i contenuti
@@ -152,7 +182,7 @@ scripts/               seed Supabase, immagini dell'app (make-app-assets.ts)
 | Domande frequenti | risposte basate sui servizi indicati su TheFork e sul funzionamento del sito |
 
 Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione, le didascalie delle foto e la frase del footer “Ti aspettiamo sotto la nostra luna.” (modificabile dall'admin).
-**Da approvare anche**: il riepilogo dopo la richiesta (“Questa è una richiesta di prenotazione, non ancora confermata…”), i testi della pagina del cliente, i messaggi WhatsApp di conferma e di rifiuto (`src/lib/messages.ts`) e i testi delle notifiche (`src/lib/events.ts`).
+**Da approvare anche**: il riepilogo dopo la richiesta (“Questa è una richiesta di prenotazione, non ancora confermata…”), i testi della pagina del cliente, i 4 messaggi WhatsApp automatici (`src/lib/whatsapp/templates.ts`), il consenso WhatsApp nel modulo di prenotazione, la sezione WhatsApp dell'informativa privacy e i testi delle notifiche (`src/lib/events.ts`).
 
 ## Design
 
@@ -173,5 +203,6 @@ Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i
 - **Privacy**: `src/app/(site)/privacy/page.tsx` è un modello, va completato con ragione sociale e P.IVA.
 - **Testi WhatsApp e notifiche**: approvare i messaggi di conferma/rifiuto e il riepilogo della richiesta (vedi sopra).
 - **Email per le notifiche push**: mettere l'email del ristorante in `VAPID_SUBJECT`.
-- **Database esistente**: eseguire `supabase/migrations/2026-10-13_app-gestione.sql` su Supabase (una volta).
+- **WhatsApp automatico**: attivare YCloud seguendo *Messaggi WhatsApp automatici* (numero su WhatsApp Business da qualche settimana, modelli approvati da Meta) ed eseguire `supabase/migrations/2026-10-14_whatsapp.sql`.
+- **Privacy e YCloud**: chiedere a YCloud il contratto per il trattamento dei dati (DPA, GDPR) e completare l'informativa.
 - **Diritti sulle foto**: sono foto pubblicate dal ristorante; confermare con il cliente che si possano usare sul sito (e chi ne è l'autore).

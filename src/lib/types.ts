@@ -33,6 +33,8 @@ export type BookingSettings = {
   daysAhead: number;
   /** minimum notice for same-day bookings */
   minNoticeMinutes: number;
+  /** send the WhatsApp messages on their own (only when YCloud is configured) */
+  whatsappAuto: boolean;
 };
 
 export type Settings = {
@@ -128,6 +130,25 @@ export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token">;
 
 /** What a guest can change on their own booking. */
 export type BookingChange = Pick<Booking, "date" | "time" | "people" | "notes">;
+
+/** Automatic WhatsApp messages to guests (approved Meta templates, sent through YCloud). */
+export type WhatsappKind = "requested" | "confirmed" | "declined" | "cancelled";
+
+/** accepted → sent → delivered → read, or failed at any point. */
+export type WhatsappStatus = "accepted" | "sent" | "delivered" | "read" | "failed";
+
+export type WhatsappMessage = {
+  /** our id, also sent to YCloud as externalId */
+  id: string;
+  booking_id: string;
+  kind: WhatsappKind;
+  /** YCloud message id */
+  provider_id: string | null;
+  status: WhatsappStatus;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 /** Notification groups a device can turn on or off. */
 export type NotifyPrefs = {

@@ -75,6 +75,11 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
   Below 360 px the tick icon is hidden and letter spacing tightens so the three buttons always fit.
   *Rifiuta* opens in place: Cinzel question, radio reasons, WhatsApp preview on `chat` (#1f2c24), Indietro + “Rifiuta e invia” (ember).
 - **Timeline “In sala”**: time column, rail with gold dots (ember = da confermare), rows expand for details and actions.
+- **Automatic WhatsApp (YCloud)**: request card adds a one-line note “il cliente riceve la risposta su WhatsApp in automatico”;
+  the refusal preview is read-only on `chat` (approved text). A message that did not go out turns the card ember with
+  “WhatsApp non inviato” + gold “Invia a mano” (prefilled) and “Fatto”. In the timeline the open row lists the messages
+  with status (in invio · inviato ✓ · consegnato ✓✓ · letto ✓✓ in `ok` · non inviato in `ember` + “Invia a mano”);
+  a closed row shows an ember “WhatsApp non inviato” chip.
 - **Notifications**: no buttons, title “Evento · Nome”, body with guests/day/time; past visits never appear in notifications, only in the app.
 - **App icon**: logo + “GESTIONE” in Cinzel on ink, full bleed (iOS/Android apply their own mask); maskable variant inside the 80 % safe zone;
   monochrome badge for the Android status bar; black launch screens for iPhone. Source: Penpot export in `design/app-icon/`.

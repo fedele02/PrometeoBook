@@ -9,7 +9,7 @@ import { RequestCard, type Request } from "./RequestCard";
 export type RequestDay = { date: string; covers: number; requests: Request[] };
 type Filter = "all" | "today" | "next";
 
-export function RequestsList({ days, today, settings, oldest }: { days: RequestDay[]; today: string; settings: Settings; oldest: string | null }) {
+export function RequestsList({ days, today, settings, waAuto, oldest }: { days: RequestDay[]; today: string; settings: Settings; waAuto: boolean; oldest: string | null }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -81,7 +81,7 @@ export function RequestsList({ days, today, settings, oldest }: { days: RequestD
               </div>
               <div className="space-y-3">
                 {d.requests.map((b) => (
-                  <RequestCard key={b.id} b={b} settings={settings} />
+                  <RequestCard key={b.id} b={b} settings={settings} waAuto={waAuto} />
                 ))}
               </div>
             </section>

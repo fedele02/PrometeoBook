@@ -1,4 +1,4 @@
-import type { Booking, BookingChange, BookingStatus, Category, Dish, MenuData, NewBooking, PushDevice, Settings } from "../types";
+import type { Booking, BookingChange, BookingStatus, Category, Dish, MenuData, NewBooking, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
 
 export class SlotFullError extends Error {
   constructor() {
@@ -46,6 +46,16 @@ export interface Repo {
   /** insert or update by id (an endpoint belongs to one device only) */
   saveDevice(d: PushDevice): Promise<void>;
   deleteDevice(id: string): Promise<void>;
+
+  /** automatic WhatsApp messages to guests */
+  saveWhatsappMessage(m: WhatsappMessage): Promise<void>;
+  getWhatsappMessage(match: { id: string } | { providerId: string }): Promise<WhatsappMessage | null>;
+  /** find by our id or by YCloud's id; returns the updated row (null if unknown) */
+  updateWhatsappMessage(
+    match: { id: string } | { providerId: string },
+    patch: { status: WhatsappStatus; error?: string | null; provider_id?: string | null },
+  ): Promise<WhatsappMessage | null>;
+  listWhatsappMessages(bookingIds: string[]): Promise<WhatsappMessage[]>;
 
   /** stores an image and returns its public URL */
   uploadImage(bytes: ArrayBuffer, contentType: string, ext: string): Promise<string>;

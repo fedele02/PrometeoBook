@@ -12,7 +12,9 @@ import { announce, pendingCount } from "@/lib/events";
 import { DEFAULT_PREFS, DEVICE_COOKIE, pushToDevices } from "@/lib/push";
 import { ADMIN_PATH } from "@/lib/pwa";
 import { adminBookingSchema, categorySchema, dishSchema, firstError, settingsSchema } from "@/lib/schemas";
-import type { BookingStatus, Category, Dish, NotifyPrefs, PushDevice, Settings } from "@/lib/types";
+import type { DeclineReason } from "@/lib/messages";
+import type { Category, Dish, NotifyPrefs, PushDevice, Settings, WhatsappKind } from "@/lib/types";
+import { sendBookingWhatsapp, type WhatsappOutcome } from "@/lib/whatsapp";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -48,43 +50,68 @@ export async function logoutAction() {
 
 // ---------- bookings -------------------------------------------------
 // The staff only answers: accept, refuse, cancel. Changing a booking is up to the guest.
+// With YCloud connected the guest gets the WhatsApp message on its own; the result
+// comes back to the app so a failed message can still be sent by hand.
 
-type StaffEvent = "accepted" | "declined" | "cancelledByStaff";
+export type AnswerResult = ActionResult & { whatsapp?: WhatsappOutcome };
 
-async function answer(id: string, status: BookingStatus, event: StaffEvent): Promise<ActionResult> {
-  return guarded(async () => {
+const KIND_OF: Record<"confirmed" | "declined" | "cancelled", { event: "accepted" | "declined" | "cancelledByStaff"; kind: WhatsappKind }> = {
+  confirmed: { event: "accepted", kind: "confirmed" },
+  declined: { event: "declined", kind: "declined" },
+  cancelled: { event: "cancelledByStaff", kind: "cancelled" },
+};
+
+async function answer(id: string, status: keyof typeof KIND_OF, reason?: DeclineReason): Promise<AnswerResult> {
+  await requireAdmin();
+  try {
     const r = repo();
-    const b = await r.getBooking(id);
-    if (!b) throw new Error("Prenotazione non trovata");
-    if (b.status === status) return;
+    const [b, s] = await Promise.all([r.getBooking(id), r.getSettings()]);
+    if (!b) return { ok: false, error: "Prenotazione non trovata" };
+    if (b.status === status) return { ok: true };
     await r.setBookingStatus(id, status);
-    after(() => announce({ type: event, booking: { ...b, status } }));
-  });
+    const booking = { ...b, status };
+    const { event, kind } = KIND_OF[status];
+    after(() => announce({ type: event, booking }));
+    const whatsapp = await sendBookingWhatsapp(kind, booking, s, { reason });
+    return { ok: true, whatsapp };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
+  }
 }
+
+const reasonSchema = z.enum(["full", "closed", "group", "custom"]);
 
 export async function acceptBookingAction(id: string) {
-  return answer(id, "confirmed", "accepted");
+  return answer(id, "confirmed");
 }
-export async function declineBookingAction(id: string) {
-  return answer(id, "declined", "declined");
+export async function declineBookingAction(id: string, reason: DeclineReason = "full") {
+  return answer(id, "declined", reasonSchema.catch("full").parse(reason));
 }
 export async function cancelBookingAction(id: string) {
-  return answer(id, "cancelled", "cancelledByStaff");
+  return answer(id, "cancelled");
 }
 
 export async function deleteBookingAction(id: string) {
   return guarded(() => repo().deleteBooking(id));
 }
 
-/** Bookings taken by phone: no capacity check, the staff decides. */
-export async function createBookingAction(input: unknown): Promise<ActionResult> {
+/** Bookings taken by phone: already confirmed, no capacity check (the staff decides). */
+export async function createBookingAction(input: unknown): Promise<AnswerResult> {
   await requireAdmin();
   const p = adminBookingSchema.safeParse(input);
   if (!p.success) return { ok: false, error: firstError(p.error) };
-  return guarded(async () => {
-    const booking = await repo().createBooking({ ...p.data, email: "", status: "confirmed", source: "admin" }, null);
+  const { sendWhatsapp, ...data } = p.data;
+  try {
+    const r = repo();
+    const [booking, s] = await Promise.all([r.createBooking({ ...data, email: "", status: "confirmed", source: "admin" }, null), r.getSettings()]);
     after(() => announce({ type: "phoneBooking", booking }));
-  });
+    const whatsapp = sendWhatsapp ? await sendBookingWhatsapp("confirmed", booking, s) : undefined;
+    return { ok: true, whatsapp };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
+  }
 }
 
 // ---------- notifications (this device) -------------------------------

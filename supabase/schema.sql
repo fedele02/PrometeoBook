@@ -65,6 +65,21 @@ create table if not exists public.push_devices (
   last_used_at timestamptz not null default now()
 );
 
+-- Automatic WhatsApp messages to guests (YCloud): one row per message, status kept
+-- up to date by the webhook (/api/whatsapp/webhook).
+create table if not exists public.whatsapp_messages (
+  id          uuid primary key,
+  booking_id  uuid not null references public.bookings(id) on delete cascade,
+  kind        text not null check (kind in ('requested','confirmed','declined','cancelled')),
+  provider_id text,
+  status      text not null default 'accepted' check (status in ('accepted','sent','delivered','read','failed')),
+  error       text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists whatsapp_messages_booking_idx on public.whatsapp_messages (booking_id);
+create index if not exists whatsapp_messages_provider_idx on public.whatsapp_messages (provider_id);
+
 -- Users allowed into the staff area (add rows after creating the user in Auth).
 create table if not exists public.admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -81,6 +96,7 @@ alter table public.dishes     enable row level security;
 alter table public.bookings   enable row level security;
 alter table public.admins     enable row level security;
 alter table public.push_devices enable row level security;
+alter table public.whatsapp_messages enable row level security;
 
 drop policy if exists "public read settings" on public.settings;
 create policy "public read settings" on public.settings for select using (true);
@@ -94,7 +110,7 @@ create policy "public read dishes" on public.dishes for select using (visible);
 drop policy if exists "admin reads own row" on public.admins;
 create policy "admin reads own row" on public.admins for select to authenticated using (user_id = auth.uid());
 
--- bookings, push_devices: no policies → nobody but the server (secret key) can touch them.
+-- bookings, push_devices, whatsapp_messages: no policies → nobody but the server (secret key) can touch them.
 
 -- ---------- atomic booking -------------------------------------------
 

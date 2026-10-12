@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { cancelBookingAction, deleteBookingAction } from "@/app/gestore-prometeo-2026/actions";
+import { cancelBookingAction, deleteBookingAction, type AnswerResult } from "@/app/gestore-prometeo-2026/actions";
 import type { DayService, ServiceName } from "@/lib/board";
 import { isActive, phoneKey } from "@/lib/customers";
 import { ADMIN_PATH } from "@/lib/pwa";
 import { telHref, whatsappHref } from "@/lib/site";
 import { capitalize, dateParts, formatDateLong, relativeDay, serviceLabel } from "@/lib/time";
-import type { Booking, Settings } from "@/lib/types";
+import type { Booking, Settings, WhatsappMessage } from "@/lib/types";
+import { WA_KIND_LABEL, WA_STATUS_LABEL, whatsappText } from "@/lib/messages";
 import { IconCalendar, IconChevron, IconNote, IconPhone, IconPlus, IconUsers, IconWhatsapp } from "../Icons";
 import { PhoneBookingModal } from "./PhoneBookingModal";
 import { RequestCard } from "./RequestCard";
@@ -17,7 +18,7 @@ import { STATUS } from "./status";
 import { useToast } from "./ui";
 
 export type DayChip = { date: string; covers: number; pending: number };
-export type Row = Booking & { history: string; visits: number; ago: string };
+export type Row = Booking & { history: string; visits: number; ago: string; wa: WhatsappMessage[] };
 
 const sectionLabel = "text-[0.7rem] font-bold uppercase tracking-[0.22em]";
 const dayHref = (d: string, today: string) => (d === today ? ADMIN_PATH : `${ADMIN_PATH}?date=${d}`);
@@ -31,6 +32,7 @@ export function BookingsBoard({
   services,
   initialService,
   statusLine,
+  waAuto,
 }: {
   settings: Settings;
   today: string;
@@ -40,6 +42,8 @@ export function BookingsBoard({
   services: DayService[];
   initialService: ServiceName;
   statusLine: string | null;
+  /** WhatsApp messages go out on their own (YCloud connected and switch on) */
+  waAuto: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -98,7 +102,7 @@ export function BookingsBoard({
         <section className="mt-6 space-y-3" aria-label="Richieste da confermare">
           {requests.length > 1 && <h2 className={`${sectionLabel} text-ember`}>Da confermare · {requests.length}</h2>}
           {requests.map((b, i) => (
-            <RequestCard key={b.id} b={b} settings={settings} fresh={i === 0} />
+            <RequestCard key={b.id} b={b} settings={settings} waAuto={waAuto} fresh={i === 0} />
           ))}
         </section>
       )}
@@ -123,16 +127,19 @@ export function BookingsBoard({
         </div>
       )}
 
-      <Timeline rows={rows} service={current?.label ?? service} isToday={date === today} />
+      <Timeline rows={rows} service={current?.label ?? service} isToday={date === today} settings={settings} />
 
       <PhoneBookingModal
         key={date}
         open={phoneOpen}
         date={date}
+        waAuto={waAuto}
         onClose={() => setPhoneOpen(false)}
-        onDone={() => {
+        onDone={(res) => {
           setPhoneOpen(false);
-          toast("Prenotazione aggiunta");
+          const wa = res.ok ? res.whatsapp : undefined;
+          if (wa && !wa.sent && !wa.skipped) toast(`Prenotazione aggiunta, ma WhatsApp non inviato: ${wa.error}`, "error");
+          else toast(wa?.sent ? "Prenotazione aggiunta · conferma inviata su WhatsApp" : "Prenotazione aggiunta");
           router.refresh();
         }}
       />
@@ -255,7 +262,7 @@ function Capacity({ rows, service, settings }: { rows: Row[]; service: DayServic
 
 /* ---------- who is coming: timeline ------------------------------------ */
 
-function Timeline({ rows, service, isToday }: { rows: Row[]; service: ServiceName; isToday: boolean }) {
+function Timeline({ rows, service, isToday, settings }: { rows: Row[]; service: ServiceName; isToday: boolean; settings: Settings }) {
   const [showLost, setShowLost] = useState(false);
   const inService = rows.filter((b) => serviceLabel(b.time) === service).sort((a, b) => a.time.localeCompare(b.time) || a.created_at.localeCompare(b.created_at));
   const active = inService.filter(isActive);
@@ -278,7 +285,7 @@ function Timeline({ rows, service, isToday }: { rows: Row[]; service: ServiceNam
         <ol className="relative mt-4">
           <span className="absolute bottom-6 left-[3.75rem] top-3 w-0.5 bg-white/10" aria-hidden />
           {active.map((b, i) => (
-            <TimelineRow key={b.id} b={b} showTime={i === 0 || active[i - 1].time !== b.time} />
+            <TimelineRow key={b.id} b={b} showTime={i === 0 || active[i - 1].time !== b.time} settings={settings} />
           ))}
         </ol>
       )}
@@ -291,7 +298,7 @@ function Timeline({ rows, service, isToday }: { rows: Row[]; service: ServiceNam
           {showLost && (
             <ol className="mt-2">
               {lost.map((b) => (
-                <TimelineRow key={b.id} b={b} showTime />
+                <TimelineRow key={b.id} b={b} showTime settings={settings} />
               ))}
             </ol>
           )}
@@ -301,7 +308,7 @@ function Timeline({ rows, service, isToday }: { rows: Row[]; service: ServiceNam
   );
 }
 
-function TimelineRow({ b, showTime }: { b: Row; showTime: boolean }) {
+function TimelineRow({ b, showTime, settings }: { b: Row; showTime: boolean; settings: Settings }) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -311,13 +318,16 @@ function TimelineRow({ b, showTime }: { b: Row; showTime: boolean }) {
   const pending = b.status === "pending";
   const gone = !isActive(b);
 
-  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, msg: string) =>
+  const waFailed = b.wa.some((m) => m.status === "failed");
+
+  const run = (fn: () => Promise<AnswerResult | { ok: boolean; error?: string }>, msg: string) =>
     start(async () => {
       const res = await fn();
-      if (res.ok) {
-        toast(msg);
-        router.refresh();
-      } else toast(res.error ?? "Errore", "error");
+      if (!res.ok) return toast(res.error ?? "Errore", "error");
+      const wa = "whatsapp" in res ? res.whatsapp : undefined;
+      if (wa && !wa.sent && !wa.skipped) toast(`${msg}, ma WhatsApp non inviato: ${wa.error}`, "error");
+      else toast(wa?.sent ? `${msg} · cliente avvisato su WhatsApp` : msg);
+      router.refresh();
     });
 
   return (
@@ -335,6 +345,7 @@ function TimelineRow({ b, showTime }: { b: Row; showTime: boolean }) {
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.cls}`}>{st.label}</span>
               {b.visits > 0 && <span className="text-xs font-semibold text-gold-light">{b.visits + 1}ª visita</span>}
               {b.source === "admin" && <span className="text-xs text-cream/50">telefonica</span>}
+              {waFailed && <span className="rounded-full bg-ember/20 px-2.5 py-0.5 text-xs font-semibold text-ember">WhatsApp non inviato</span>}
             </span>
           </span>
           <IconChevron dir={open ? "up" : "down"} className="h-5 w-5 shrink-0 text-cream/40" />
@@ -351,6 +362,7 @@ function TimelineRow({ b, showTime }: { b: Row; showTime: boolean }) {
             <p className="text-cream/50">
               {b.source === "web" ? "Dal sito" : "Telefonica"} · ricevuta {b.ago}
             </p>
+            {b.wa.length > 0 && <WhatsappLog b={b} settings={settings} />}
             <div className="flex flex-wrap gap-2">
               <a href={telHref(b.phone)} className="btn btn-line min-h-11 px-4 text-xs text-cream/85">
                 <IconPhone className="h-4 w-4" /> {b.phone}
@@ -406,5 +418,34 @@ function TimelineRow({ b, showTime }: { b: Row; showTime: boolean }) {
         )}
       </div>
     </li>
+  );
+}
+
+/** The WhatsApp messages this guest received (or should have), with delivery status. */
+function WhatsappLog({ b, settings }: { b: Row; settings: Settings }) {
+  return (
+    <ul className="space-y-1.5 rounded-xl bg-chat/60 px-3 py-2.5" aria-label="Messaggi WhatsApp">
+      {b.wa.map((m) => {
+        const failed = m.status === "failed";
+        return (
+          <li key={m.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <IconWhatsapp className={`h-4 w-4 shrink-0 ${failed ? "text-ember" : "text-ok"}`} />
+            <span className="font-semibold">{WA_KIND_LABEL[m.kind]}</span>
+            <span className={failed ? "font-semibold text-ember" : m.status === "read" ? "text-ok" : "text-cream/60"}>
+              {WA_STATUS_LABEL[m.status]}
+              {m.status === "read" || m.status === "delivered" ? " ✓✓" : m.status === "sent" ? " ✓" : ""}
+            </span>
+            {failed && (
+              <>
+                {m.error && <span className="w-full text-xs text-cream/55">{m.error}</span>}
+                <a href={whatsappHref(b.phone, whatsappText(m.kind, b, settings))} target="_blank" rel="noopener" className="font-semibold text-gold-light underline underline-offset-4">
+                  Invia a mano
+                </a>
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

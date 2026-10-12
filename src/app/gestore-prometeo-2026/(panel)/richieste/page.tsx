@@ -2,6 +2,7 @@ import { agoLabel } from "@/lib/board";
 import { guestHistory, isActive } from "@/lib/customers";
 import { repo } from "@/lib/data";
 import { addDays, romeNow } from "@/lib/time";
+import { isWhatsappAuto } from "@/lib/whatsapp";
 import { RequestsList, type RequestDay } from "@/components/admin/RequestsList";
 
 export const metadata = { title: "Richieste" };
@@ -25,5 +26,5 @@ export default async function RequestsPage() {
   const list = [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
   const oldest = list.flatMap((d) => d.requests).sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
 
-  return <RequestsList days={list} today={today} settings={settings} oldest={oldest ? agoLabel(oldest.created_at) : null} />;
+  return <RequestsList days={list} today={today} settings={settings} waAuto={isWhatsappAuto(settings)} oldest={oldest ? agoLabel(oldest.created_at) : null} />;
 }

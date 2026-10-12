@@ -6,6 +6,7 @@ import { guestCanManage, sameServiceBooking } from "@/lib/customers";
 import { repo } from "@/lib/data";
 import { SlotFullError } from "@/lib/data/repo";
 import { announce } from "@/lib/events";
+import { sendWhatsappOrAlert } from "@/lib/whatsapp";
 import { dayState, formatDateLong, isBookableDate, isValidDate, serviceLabel, slotsForDate } from "@/lib/time";
 import type { Settings } from "@/lib/types";
 
@@ -114,7 +115,7 @@ export async function submitBooking(input: BookingInput): Promise<BookingResult>
       { date: b.date, time: b.time, people: b.people, name: b.name, phone: b.phone, email: "", notes: b.notes, status: "pending", source: "web" },
       s.booking.maxCoversPerSlot,
     );
-    after(() => announce({ type: "requested", booking }));
+    after(() => Promise.all([announce({ type: "requested", booking }), sendWhatsappOrAlert("requested", booking, s)]));
     return { ok: true, token: booking.manage_token };
   } catch (e) {
     if (e instanceof SlotFullError) return { ok: false, error: SLOT_TAKEN, field: "time", slotFull: true };

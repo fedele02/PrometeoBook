@@ -4,6 +4,7 @@ import { getPublicContent } from "@/lib/data";
 import { telHref } from "@/lib/site";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { MyBookings } from "@/components/booking/MyBookings";
+import { isWhatsappAuto } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
   title: "Prenota un tavolo",
@@ -24,7 +25,7 @@ export default async function BookingPage() {
         <div className="mt-8">
           <MyBookings />
           {settings.booking.enabled ? (
-            <BookingWizard settings={settings} />
+            <BookingWizard settings={settings} whatsappAuto={isWhatsappAuto(settings)} />
           ) : (
             <div className="border border-ink/15 bg-white p-8 text-center">
               <p className="text-xl">Le prenotazioni online sono momentaneamente sospese.</p>

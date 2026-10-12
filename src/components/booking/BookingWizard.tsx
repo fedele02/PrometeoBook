@@ -32,7 +32,8 @@ const shortDate = (d: string) => {
   return `${p.wd} ${p.day} ${p.month}`;
 };
 
-export function BookingWizard({ settings }: { settings: Settings }) {
+/** `whatsappAuto`: the guest gets an automatic "request received" message on WhatsApp. */
+export function BookingWizard({ settings, whatsappAuto = false }: { settings: Settings; whatsappAuto?: boolean }) {
   const max = settings.booking.maxPartySize;
   const [step, setStep] = useState<Step>(0);
   const [dir, setDir] = useState(1);
@@ -114,6 +115,7 @@ export function BookingWizard({ settings }: { settings: Settings }) {
       <Done
         token={done}
         settings={settings}
+        whatsappAuto={whatsappAuto}
         summary={{ date: date!, time: time!, people: people!, name: name.trim(), phone: phone.trim(), notes: notes.trim() }}
         onAgain={() => {
           setDone(null);
@@ -278,7 +280,7 @@ export function BookingWizard({ settings }: { settings: Settings }) {
                     {privacy && <IconCheck className="h-5 w-5" strokeWidth={3} />}
                   </span>
                   <span className="leading-snug text-ink/80">
-                    Acconsento all&apos;uso dei miei dati solo per gestire questa prenotazione (
+                    Acconsento all&apos;uso dei miei dati solo per gestire questa prenotazione e a ricevere su WhatsApp i messaggi che la riguardano (
                     <Link href="/privacy" target="_blank" className="underline underline-offset-2">
                       informativa
                     </Link>
@@ -306,11 +308,13 @@ export function BookingWizard({ settings }: { settings: Settings }) {
 function Done({
   token,
   settings,
+  whatsappAuto,
   summary,
   onAgain,
 }: {
   token: string;
   settings: Settings;
+  whatsappAuto: boolean;
   summary: { date: string; time: string; people: number; name: string; phone: string; notes: string };
   onAgain: () => void;
 }) {
@@ -359,6 +363,7 @@ function Done({
           Il ristorante la verificherà e ti invierà la conferma con un messaggio WhatsApp al numero{" "}
           <span className="whitespace-nowrap font-semibold text-ink">{summary.phone}</span>. Il tavolo è riservato solo dopo la conferma.
         </p>
+        {whatsappAuto && <p className="mt-2 text-ink/75">Ti abbiamo appena scritto su WhatsApp per confermarti che la richiesta è arrivata.</p>}
       </div>
 
       <div className="mt-6 flex flex-col gap-3">

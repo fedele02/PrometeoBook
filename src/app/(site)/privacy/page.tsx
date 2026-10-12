@@ -35,6 +35,14 @@ export default async function PrivacyPage() {
         informazioni su allergie e intolleranze servono solo a prepararti piatti sicuri.
       </p>
 
+      <h2 className={h2}>Messaggi su WhatsApp</h2>
+      <p className="mt-3">
+        Le comunicazioni sulla tua prenotazione (richiesta ricevuta, conferma, eventuale rifiuto o annullamento) ti arrivano su WhatsApp al
+        numero che ci hai indicato. Per inviarle in automatico usiamo la piattaforma WhatsApp Business di Meta tramite il fornitore YCloud,
+        che tratta per nostro conto solo i dati necessari al messaggio (nome, numero, giorno, ora e persone) e conserva lo storico dei
+        messaggi per un massimo di 6 mesi. Se preferisci non riceverli, scrivici o chiamaci.
+      </p>
+
       <h2 className={h2}>Per quanto tempo</h2>
       <p className="mt-3">I dati delle prenotazioni vengono conservati per il tempo necessario alla gestione del servizio e poi cancellati.</p>
 
