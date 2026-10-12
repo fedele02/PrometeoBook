@@ -3,10 +3,11 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { seedCategories, seedDishes, seedSettings } from "../seed";
-import type { Booking, Category, Dish, Settings } from "../types";
+import { isActive } from "../customers";
+import type { Booking, Category, Dish, PushDevice, Settings } from "../types";
 import { SlotFullError, type Repo } from "./repo";
 
-type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[] };
+type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[] };
 
 const DB_FILE = path.join(process.cwd(), "data", "local-db.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -24,6 +25,9 @@ async function read(): Promise<Db> {
     const db = JSON.parse(await fs.readFile(DB_FILE, "utf8")) as Db;
     // settings added in later versions get their defaults
     db.settings = { ...seedSettings, ...db.settings, booking: { ...seedSettings.booking, ...db.settings.booking } };
+    db.devices ??= [];
+    // bookings saved before guests could manage them get their private link
+    for (const b of db.bookings) b.manage_token ??= randomUUID();
     return db;
   } catch {
     return {
@@ -31,6 +35,7 @@ async function read(): Promise<Db> {
       categories: structuredClone(seedCategories),
       dishes: structuredClone(seedDishes),
       bookings: [],
+      devices: [],
     };
   }
 }
@@ -48,6 +53,10 @@ const mutate = (fn: (db: Db) => void | Promise<void>) =>
     await fn(db);
     await write(db);
   });
+
+/** guests holding seats at a date and time */
+const taken = (db: Db, date: string, time: string, ignoreId?: string) =>
+  db.bookings.filter((b) => b.date === date && b.time === time && isActive(b) && b.id !== ignoreId).reduce((n, b) => n + b.people, 0);
 
 const byPos = <T extends { position: number }>(a: T, b: T) => a.position - b.position;
 
@@ -98,25 +107,32 @@ export const localRepo: Repo = {
       .filter((b) => b.date >= from && b.date <= to)
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   },
-  async coversByTime(date) {
+  getBooking: async (id) => (await read()).bookings.find((b) => b.id === id) ?? null,
+  getBookingByToken: async (token) => (await read()).bookings.find((b) => b.manage_token === token) ?? null,
+  async coversByTime(date, ignoreId) {
     const out: Record<string, number> = {};
     for (const b of (await read()).bookings)
-      if (b.date === date && b.status !== "cancelled") out[b.time] = (out[b.time] ?? 0) + b.people;
+      if (b.date === date && isActive(b) && b.id !== ignoreId) out[b.time] = (out[b.time] ?? 0) + b.people;
     return out;
   },
   createBooking: (nb, maxCovers) =>
     locked(async () => {
       const db = await read();
-      if (maxCovers !== null) {
-        const taken = db.bookings
-          .filter((b) => b.date === nb.date && b.time === nb.time && b.status !== "cancelled")
-          .reduce((n, b) => n + b.people, 0);
-        if (taken + nb.people > maxCovers) throw new SlotFullError();
-      }
-      const booking: Booking = { ...nb, id: randomUUID(), created_at: new Date().toISOString() };
+      if (maxCovers !== null && taken(db, nb.date, nb.time) + nb.people > maxCovers) throw new SlotFullError();
+      const booking: Booking = { ...nb, id: randomUUID(), created_at: new Date().toISOString(), manage_token: randomUUID() };
       db.bookings.push(booking);
       await write(db);
       return booking;
+    }),
+  changeBooking: (id, change, maxCovers) =>
+    locked(async () => {
+      const db = await read();
+      const b = db.bookings.find((x) => x.id === id);
+      if (!b) throw new Error("Prenotazione non trovata");
+      if (taken(db, change.date, change.time, id) + change.people > maxCovers) throw new SlotFullError();
+      Object.assign(b, change, { status: "pending" });
+      await write(db);
+      return b;
     }),
   setBookingStatus: (id, status) =>
     mutate((db) => {
@@ -127,6 +143,15 @@ export const localRepo: Repo = {
   async countBookingsByPhone(phone, sinceIso) {
     return (await read()).bookings.filter((b) => b.phone === phone && b.created_at >= sinceIso).length;
   },
+
+  listDevices: async () => (await read()).devices,
+  saveDevice: (d) =>
+    mutate((db) => {
+      // an endpoint belongs to one device only
+      db.devices = db.devices.filter((x) => x.id !== d.id && x.endpoint !== d.endpoint);
+      db.devices.push(d);
+    }),
+  deleteDevice: (id) => mutate((db) => void (db.devices = db.devices.filter((d) => d.id !== id))),
 
   async uploadImage(bytes, _type, ext) {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });

@@ -53,6 +53,12 @@ export const IconUsers = (p: P) => (
     <path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5a3 3 0 0 1 0 6M18 20a5 5 0 0 0-2.5-4.3" />
   </svg>
 );
+export const IconUser = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="8" r="3.5" />
+    <path d="M5 20a7 7 0 0 1 14 0" />
+  </svg>
+);
 export const IconClose = (p: P) => (
   <svg {...base(p)}>
     <path d="M6 6l12 12M18 6 6 18" />
@@ -155,5 +161,41 @@ export const IconStore = (p: P) => (
 export const IconRefresh = (p: P) => (
   <svg {...base(p)}>
     <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
+  </svg>
+);
+export const IconBell = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z" />
+    <path d="M10 20.5a2 2 0 0 0 4 0" />
+  </svg>
+);
+export const IconInbox = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 13l2.5-8h11L20 13v6H4z" />
+    <path d="M4 13h5l1 2h4l1-2h5" />
+  </svg>
+);
+/** iOS share sheet glyph */
+export const IconShare = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 3v12M8 7l4-4 4 4" />
+    <path d="M7 10H5v11h14V10h-2" />
+  </svg>
+);
+export const IconAddSquare = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
+export const IconDownload = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14" />
+  </svg>
+);
+export const IconNote = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M5 4h14v11l-5 5H5z" />
+    <path d="M14 20v-5h5" />
   </svg>
 );

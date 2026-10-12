@@ -53,7 +53,7 @@ export async function getAdmin(): Promise<Admin | null> {
 
 export async function requireAdmin(): Promise<Admin> {
   const admin = await getAdmin();
-  if (!admin) redirect("/admin/login");
+  if (!admin) redirect("/gestore-prometeo-2026/login");
   return admin;
 }
 

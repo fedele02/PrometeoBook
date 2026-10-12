@@ -28,7 +28,9 @@ Rejected from the skill (and why):
 | Accent / CTA | `gold` | `#c8a55a` | 8.9:1 on ink · logo, prices, primary buttons |
 | Gold on light | `gold-deep` | `#94742e` | only large text / decoration on paper |
 | Booking surface | `paper` | `#f4efe6` | table linen, booking page only |
-| Error | `ember` | `#e0763a` | |
+| Error | `ember` | `#e0763a` | also “da confermare” in the staff app |
+| Success | `ok` | `#6fbf8b` | confirmed bookings, success notices |
+| Chat | `chat` | `#1f2c24` | WhatsApp message preview (staff app) |
 
 Rules: no gradients as decoration (only photo scrims); gold never used for long body text;
 no light/dark jumps between consecutive home sections — alternate `ink` / `ink-2` instead.
@@ -57,6 +59,25 @@ Body text never below 16 px on mobile; line length ≤ 70 characters.
 - **Photos**: square corners, captions on a bottom scrim; hover zoom ≤ 1.03 inside an overflow mask (no layout shift).
 - **Callout** (from their posts): 1 px left rule, bold title, one line of text.
 - **Sheet / modal**: bottom sheet on phones, drag only from the handle.
+
+## Staff app “Prometeo Gestione” (`/gestore-prometeo-2026`)
+
+Approved in Penpot as the **A+B hybrid** (layout and type of direction A, chart by time and evening timeline of B,
+the refusal opening inside the card as in B). Same dark + gold tokens as the site.
+
+- **Shell**: phone top bar (logo + PROMETEO wordmark, bell → *Notifiche e app*) and 5 bottom tabs
+  (Prenotazioni · Richieste · Clienti · Menu · Locale), equal columns, active tab = gold pill behind the icon,
+  ember counter on *Richieste*. Safe areas on all four sides (`env(safe-area-inset-*)`). Desktop: sidebar.
+- **Section labels**: Hanken 700, 11 px, uppercase, tracking .22em, gold (ember for “da confermare”).
+- **Day strip**: only days with bookings, 56×76 chips radius 12, selected = gold fill; ember badge = requests; “Altri” opens the date picker.
+- **Covers card**: big number 40 px, “in attesa” on the right; bars per bookable time, track = max covers per time, ember from 80 %.
+- **Request card**: radius 16, gold border when it is the newest, ember otherwise. Accetta (gold) · Rifiuta (ember outline) · call (square).
+  Below 360 px the tick icon is hidden and letter spacing tightens so the three buttons always fit.
+  *Rifiuta* opens in place: Cinzel question, radio reasons, WhatsApp preview on `chat` (#1f2c24), Indietro + “Rifiuta e invia” (ember).
+- **Timeline “In sala”**: time column, rail with gold dots (ember = da confermare), rows expand for details and actions.
+- **Notifications**: no buttons, title “Evento · Nome”, body with guests/day/time; past visits never appear in notifications, only in the app.
+- **App icon**: logo + “GESTIONE” in Cinzel on ink, full bleed (iOS/Android apply their own mask); maskable variant inside the 80 % safe zone;
+  monochrome badge for the Android status bar; black launch screens for iPhone. Source: Penpot export in `design/app-icon/`.
 
 ## Motion (Motion library)
 

@@ -96,7 +96,6 @@ export const seedSettings: Settings = {
     maxPartySize: 10,
     daysAhead: 60,
     minNoticeMinutes: 60,
-    autoConfirm: true,
   },
   announcement: { enabled: false, text: "" },
 };

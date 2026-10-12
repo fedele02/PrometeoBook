@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPublicContent } from "@/lib/data";
 import { telHref } from "@/lib/site";
 import { BookingWizard } from "@/components/booking/BookingWizard";
+import { MyBookings } from "@/components/booking/MyBookings";
 
 export const metadata: Metadata = {
   title: "Prenota un tavolo",
@@ -21,6 +22,7 @@ export default async function BookingPage() {
         </p>
 
         <div className="mt-8">
+          <MyBookings />
           {settings.booking.enabled ? (
             <BookingWizard settings={settings} />
           ) : (

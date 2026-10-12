@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { loginAction } from "@/app/admin/actions";
+import { loginAction } from "@/app/gestore-prometeo-2026/actions";
 
 export function LoginForm({ withEmail }: { withEmail: boolean }) {
   const [state, action, pending] = useActionState(loginAction, undefined);

@@ -33,8 +33,6 @@ export type BookingSettings = {
   daysAhead: number;
   /** minimum notice for same-day bookings */
   minNoticeMinutes: number;
-  /** if false bookings arrive as "da confermare" */
-  autoConfirm: boolean;
 };
 
 export type Settings = {
@@ -100,7 +98,13 @@ export type MenuData = {
   dishes: Dish[];
 };
 
-export type BookingStatus = "pending" | "confirmed" | "cancelled";
+/**
+ * pending   → request from the site (or changed by the guest), waiting for the staff
+ * confirmed → accepted by the staff (or taken by phone)
+ * declined  → refused by the staff
+ * cancelled → cancelled by the guest or by the staff
+ */
+export type BookingStatus = "pending" | "confirmed" | "declined" | "cancelled";
 
 export type Booking = {
   id: string;
@@ -116,6 +120,36 @@ export type Booking = {
   notes: string;
   status: BookingStatus;
   source: "web" | "admin";
+  /** secret for the guest's private page (/prenotazione/<token>) */
+  manage_token: string;
 };
 
-export type NewBooking = Omit<Booking, "id" | "created_at">;
+export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token">;
+
+/** What a guest can change on their own booking. */
+export type BookingChange = Pick<Booking, "date" | "time" | "people" | "notes">;
+
+/** Notification groups a device can turn on or off. */
+export type NotifyPrefs = {
+  /** new requests from the site */
+  requests: boolean;
+  /** a guest changed date, time or guests */
+  changes: boolean;
+  /** a guest cancelled */
+  cancellations: boolean;
+  /** what colleagues did on other devices (accepted, refused, phone bookings) */
+  staff: boolean;
+};
+
+/** A phone or computer subscribed to the staff app's push notifications. */
+export type PushDevice = {
+  id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  /** "iPhone", "Android", "Windows · Chrome"… */
+  label: string;
+  prefs: NotifyPrefs;
+  created_at: string;
+  last_used_at: string;
+};

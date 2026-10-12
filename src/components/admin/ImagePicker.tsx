@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { uploadImageAction } from "@/app/admin/actions";
+import { uploadImageAction } from "@/app/gestore-prometeo-2026/actions";
 import { IconImage, IconTrash } from "../Icons";
 
 const MAX_SIDE = 1600;

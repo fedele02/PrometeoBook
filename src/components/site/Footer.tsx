@@ -80,9 +80,6 @@ export function Footer({ settings: s }: { settings: Settings }) {
         <Link href="/privacy" className="py-2 hover:text-cream">
           Privacy
         </Link>
-        <Link href="/admin" prefetch={false} className="py-2 hover:text-cream">
-          Area riservata
-        </Link>
       </div>
     </footer>
   );

@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { seedSettings } from "../seed";
-import type { Booking, Category, Dish, Settings } from "../types";
+import type { Booking, Category, Dish, PushDevice, Settings } from "../types";
 import { createAdminClient } from "../supabase/admin";
 import { SlotFullError, type Repo } from "./repo";
 
@@ -70,18 +70,41 @@ export function supabaseRepo(): Repo {
     },
 
     async listBookings(from, to) {
-      return check(
-        await db
-          .from("bookings")
-          .select("*")
-          .gte("date", from)
-          .lte("date", to)
-          .order("date")
-          .order("time"),
-      ) as Booking[];
+      // PostgREST returns at most 1000 rows per request: page through them
+      const PAGE = 1000;
+      const out: Booking[] = [];
+      for (let start = 0; ; start += PAGE) {
+        const page = check(
+          await db
+            .from("bookings")
+            .select("*")
+            .gte("date", from)
+            .lte("date", to)
+            .order("date")
+            .order("time")
+            .order("id")
+            .range(start, start + PAGE - 1),
+        ) as Booking[];
+        out.push(...page);
+        if (page.length < PAGE) return out;
+      }
     },
-    async coversByTime(date) {
-      const rows = check(await db.from("bookings").select("time, people").eq("date", date).neq("status", "cancelled"));
+    async getBooking(id) {
+      const res = await db.from("bookings").select("*").eq("id", id).maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return (res.data as Booking | null) ?? null;
+    },
+    async getBookingByToken(token) {
+      // malformed tokens would make Postgres throw on the uuid cast
+      if (!/^[0-9a-f-]{36}$/i.test(token)) return null;
+      const res = await db.from("bookings").select("*").eq("manage_token", token).maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return (res.data as Booking | null) ?? null;
+    },
+    async coversByTime(date, ignoreId) {
+      let q = db.from("bookings").select("time, people").eq("date", date).in("status", ["pending", "confirmed"]);
+      if (ignoreId) q = q.neq("id", ignoreId);
+      const rows = check(await q);
       const out: Record<string, number> = {};
       for (const r of rows as { time: string; people: number }[]) out[r.time] = (out[r.time] ?? 0) + r.people;
       return out;
@@ -90,6 +113,15 @@ export function supabaseRepo(): Repo {
       // The SQL function locks the (date, time) slot so two guests can't
       // grab the last seats at the same moment.
       const res = await db.rpc("create_booking", { p: b, max_covers: maxCovers });
+      if (res.error) {
+        if (res.error.message.includes("SLOT_FULL")) throw new SlotFullError();
+        throw new Error(res.error.message);
+      }
+      return res.data as Booking;
+    },
+    async changeBooking(id, change, maxCovers) {
+      // same slot lock as create_booking, ignoring the booking's own seats
+      const res = await db.rpc("change_booking", { p_id: id, p: change, max_covers: maxCovers });
       if (res.error) {
         if (res.error.message.includes("SLOT_FULL")) throw new SlotFullError();
         throw new Error(res.error.message);
@@ -110,6 +142,18 @@ export function supabaseRepo(): Repo {
         .gte("created_at", sinceIso);
       if (res.error) throw new Error(res.error.message);
       return res.count ?? 0;
+    },
+
+    async listDevices() {
+      return check(await db.from("push_devices").select("*").order("created_at")) as PushDevice[];
+    },
+    async saveDevice(d) {
+      // an endpoint belongs to one device only
+      check(await db.from("push_devices").delete().eq("endpoint", d.endpoint).neq("id", d.id));
+      check(await db.from("push_devices").upsert(d));
+    },
+    async deleteDevice(id) {
+      check(await db.from("push_devices").delete().eq("id", id));
     },
 
     async uploadImage(bytes, contentType, ext) {

@@ -43,7 +43,6 @@ export const settingsSchema = z.object({
     maxPartySize: z.number().int().min(1).max(60),
     daysAhead: z.number().int().min(1).max(365),
     minNoticeMinutes: z.number().int().min(0).max(1440),
-    autoConfirm: z.boolean(),
   }),
   announcement: z.object({ enabled: z.boolean(), text: text(200) }),
 });

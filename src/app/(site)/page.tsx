@@ -220,8 +220,7 @@ export default async function HomePage() {
                 ti aspetta
               </Reveal>
               <Reveal as="p" delay={140} className="mt-6 max-w-md text-[1.05rem] text-cream/75">
-                Persone, giorno, orario: bastano pochi secondi
-                {s.booking.autoConfirm ? " e la conferma è immediata." : "."}
+                Persone, giorno, orario: bastano pochi secondi. Ti confermiamo il tavolo su WhatsApp.
               </Reveal>
               <Reveal delay={200} className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link href="/prenota" className="btn btn-gold">

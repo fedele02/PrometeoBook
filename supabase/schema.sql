@@ -45,13 +45,27 @@ create table if not exists public.bookings (
   phone       text not null check (char_length(phone) between 6 and 25),
   email       text not null default '',
   notes       text not null default '' check (char_length(notes) <= 500),
-  status      text not null default 'pending' check (status in ('pending','confirmed','cancelled')),
-  source      text not null default 'web' check (source in ('web','admin'))
+  status      text not null default 'pending' check (status in ('pending','confirmed','declined','cancelled')),
+  source      text not null default 'web' check (source in ('web','admin')),
+  -- secret of the guest's private page /prenotazione/<token>
+  manage_token uuid not null default gen_random_uuid() unique
 );
 create index if not exists bookings_date_idx on public.bookings (date, time);
 create index if not exists bookings_phone_idx on public.bookings (phone, created_at);
 
--- Users allowed into /admin (add rows after creating the user in Auth).
+-- Phones and computers subscribed to the staff app's push notifications.
+create table if not exists public.push_devices (
+  id           uuid primary key,
+  endpoint     text not null unique,
+  p256dh       text not null,
+  auth         text not null,
+  label        text not null default '',
+  prefs        jsonb not null default '{}'::jsonb,
+  created_at   timestamptz not null default now(),
+  last_used_at timestamptz not null default now()
+);
+
+-- Users allowed into the staff area (add rows after creating the user in Auth).
 create table if not exists public.admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
@@ -66,6 +80,7 @@ alter table public.categories enable row level security;
 alter table public.dishes     enable row level security;
 alter table public.bookings   enable row level security;
 alter table public.admins     enable row level security;
+alter table public.push_devices enable row level security;
 
 drop policy if exists "public read settings" on public.settings;
 create policy "public read settings" on public.settings for select using (true);
@@ -79,7 +94,7 @@ create policy "public read dishes" on public.dishes for select using (visible);
 drop policy if exists "admin reads own row" on public.admins;
 create policy "admin reads own row" on public.admins for select to authenticated using (user_id = auth.uid());
 
--- bookings: no policies → nobody but the server (secret key) can touch them.
+-- bookings, push_devices: no policies → nobody but the server (secret key) can touch them.
 
 -- ---------- atomic booking -------------------------------------------
 
@@ -100,7 +115,7 @@ begin
   if max_covers is not null then
     select coalesce(sum(people), 0) into v_taken
       from public.bookings
-     where date = v_date and time = v_time and status <> 'cancelled';
+     where date = v_date and time = v_time and status in ('pending','confirmed');
     if v_taken + v_people > max_covers then
       raise exception 'SLOT_FULL';
     end if;
@@ -116,6 +131,43 @@ end $$;
 
 revoke all on function public.create_booking(jsonb, int) from public, anon, authenticated;
 grant execute on function public.create_booking(jsonb, int) to service_role;
+
+-- A guest changes date, time, guests or notes: same slot lock, the booking's own
+-- seats don't count, and it goes back to "pending" for the staff to confirm again.
+create or replace function public.change_booking(p_id uuid, p jsonb, max_covers int)
+returns public.bookings
+language plpgsql
+as $$
+declare
+  v_date   date := (p->>'date')::date;
+  v_time   text := p->>'time';
+  v_people int  := (p->>'people')::int;
+  v_taken  int;
+  v_row    public.bookings;
+begin
+  perform pg_advisory_xact_lock(hashtext(v_date::text || ' ' || v_time));
+
+  select coalesce(sum(people), 0) into v_taken
+    from public.bookings
+   where date = v_date and time = v_time and status in ('pending','confirmed') and id <> p_id;
+  if v_taken + v_people > max_covers then
+    raise exception 'SLOT_FULL';
+  end if;
+
+  update public.bookings
+     set date = v_date, time = v_time, people = v_people,
+         notes = coalesce(p->>'notes', ''), status = 'pending'
+   where id = p_id
+  returning * into v_row;
+
+  if v_row.id is null then
+    raise exception 'NOT_FOUND';
+  end if;
+  return v_row;
+end $$;
+
+revoke all on function public.change_booking(uuid, jsonb, int) from public, anon, authenticated;
+grant execute on function public.change_booking(uuid, jsonb, int) to service_role;
 
 -- ---------- storage for dish photos ----------------------------------
 

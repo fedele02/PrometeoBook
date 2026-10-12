@@ -29,7 +29,6 @@ export const metadata: Metadata = {
     siteName: "Prometeo Fine Dining",
     images: [{ url: "/img/og-image.jpg", width: 1200, height: 630 }],
   },
-  appleWebApp: { title: "Prometeo", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

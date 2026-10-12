@@ -21,4 +21,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/admin/:path*"] };
+// the staff area only, without the app's static files (service worker, manifest, icons)
+export const config = {
+  matcher: ["/gestore-prometeo-2026", "/gestore-prometeo-2026/((?!sw\.js|manifest\.webmanifest|icons/|splash/).*)"],
+};

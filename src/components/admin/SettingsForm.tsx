@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { saveSettingsAction } from "@/app/admin/actions";
+import { saveSettingsAction } from "@/app/gestore-prometeo-2026/actions";
 import { WEEKDAYS, WEEK_ORDER, formatDateLong, romeNow } from "@/lib/time";
 import type { Settings } from "@/lib/types";
 import { IconPlus, IconTrash } from "../Icons";
@@ -165,12 +165,6 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           <h2 className="font-display text-lg tracking-[0.06em]">Prenotazioni online</h2>
           <div className="mt-5 space-y-5">
             <Toggle checked={s.booking.enabled} onChange={(v) => upBooking({ enabled: v })} label="Accetta prenotazioni dal sito" />
-            <Toggle
-              checked={s.booking.autoConfirm}
-              onChange={(v) => upBooking({ autoConfirm: v })}
-              label="Conferma automatica"
-              hint="Se spento, le richieste arrivano “da confermare”"
-            />
             <div className="grid gap-4 sm:grid-cols-2">
               <FieldLabel label="Coperti massimi per orario" hint="Quanti ospiti al massimo possono arrivare alla stessa ora">
                 <input type="number" min={1} value={s.booking.maxCoversPerSlot} onChange={(e) => upBooking({ maxCoversPerSlot: num(e.target.value) })} className={smallInput} />

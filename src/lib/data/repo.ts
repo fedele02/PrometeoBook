@@ -1,4 +1,4 @@
-import type { Booking, BookingStatus, Category, Dish, MenuData, NewBooking, Settings } from "../types";
+import type { Booking, BookingChange, BookingStatus, Category, Dish, MenuData, NewBooking, PushDevice, Settings } from "../types";
 
 export class SlotFullError extends Error {
   constructor() {
@@ -26,13 +26,26 @@ export interface Repo {
   reorderDishes(ids: string[]): Promise<void>;
 
   listBookings(from: string, to: string): Promise<Booking[]>;
-  /** guests already booked per time on a date (cancelled excluded) */
-  coversByTime(date: string): Promise<Record<string, number>>;
+  getBooking(id: string): Promise<Booking | null>;
+  getBookingByToken(token: string): Promise<Booking | null>;
+  /** guests already booked per time on a date (only pending and confirmed hold seats) */
+  coversByTime(date: string, ignoreId?: string): Promise<Record<string, number>>;
   /** atomically checks capacity and inserts; throws SlotFullError */
   createBooking(b: NewBooking, maxCovers: number | null): Promise<Booking>;
+  /**
+   * A guest changes their booking: atomically checks the new slot (ignoring the
+   * booking's own seats), saves and puts it back to "pending". Throws SlotFullError.
+   */
+  changeBooking(id: string, change: BookingChange, maxCovers: number): Promise<Booking>;
   setBookingStatus(id: string, status: BookingStatus): Promise<void>;
   deleteBooking(id: string): Promise<void>;
   countBookingsByPhone(phone: string, sinceIso: string): Promise<number>;
+
+  /** devices subscribed to the staff app's notifications */
+  listDevices(): Promise<PushDevice[]>;
+  /** insert or update by id (an endpoint belongs to one device only) */
+  saveDevice(d: PushDevice): Promise<void>;
+  deleteDevice(id: string): Promise<void>;
 
   /** stores an image and returns its public URL */
   uploadImage(bytes: ArrayBuffer, contentType: string, ext: string): Promise<string>;

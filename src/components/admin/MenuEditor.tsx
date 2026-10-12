@@ -11,7 +11,7 @@ import {
   saveCategoryAction,
   saveDishAction,
   type ActionResult,
-} from "@/app/admin/actions";
+} from "@/app/gestore-prometeo-2026/actions";
 import { ALLERGENS, DISH_TAGS } from "@/lib/catalog";
 import { euro } from "@/lib/site";
 import type { Category, Dish } from "@/lib/types";

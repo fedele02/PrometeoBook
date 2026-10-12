@@ -2,11 +2,17 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath, updateTag } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { z } from "zod";
 import { login, logout, requireAdmin } from "@/lib/auth";
 import { CONTENT_TAG, repo } from "@/lib/data";
+import { announce, pendingCount } from "@/lib/events";
+import { DEFAULT_PREFS, DEVICE_COOKIE, pushToDevices } from "@/lib/push";
+import { ADMIN_PATH } from "@/lib/pwa";
 import { adminBookingSchema, categorySchema, dishSchema, firstError, settingsSchema } from "@/lib/schemas";
-import type { BookingStatus, Category, Dish, Settings } from "@/lib/types";
+import type { BookingStatus, Category, Dish, NotifyPrefs, PushDevice, Settings } from "@/lib/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -32,18 +38,38 @@ async function guarded(fn: () => Promise<void>): Promise<ActionResult> {
 export async function loginAction(_: unknown, form: FormData): Promise<{ error: string } | undefined> {
   const error = await login(String(form.get("email") ?? ""), String(form.get("password") ?? ""));
   if (error) return { error };
-  redirect("/admin");
+  redirect("/gestore-prometeo-2026");
 }
 
 export async function logoutAction() {
   await logout();
-  redirect("/admin/login");
+  redirect("/gestore-prometeo-2026/login");
 }
 
 // ---------- bookings -------------------------------------------------
+// The staff only answers: accept, refuse, cancel. Changing a booking is up to the guest.
 
-export async function setBookingStatusAction(id: string, status: BookingStatus) {
-  return guarded(() => repo().setBookingStatus(id, status));
+type StaffEvent = "accepted" | "declined" | "cancelledByStaff";
+
+async function answer(id: string, status: BookingStatus, event: StaffEvent): Promise<ActionResult> {
+  return guarded(async () => {
+    const r = repo();
+    const b = await r.getBooking(id);
+    if (!b) throw new Error("Prenotazione non trovata");
+    if (b.status === status) return;
+    await r.setBookingStatus(id, status);
+    after(() => announce({ type: event, booking: { ...b, status } }));
+  });
+}
+
+export async function acceptBookingAction(id: string) {
+  return answer(id, "confirmed", "accepted");
+}
+export async function declineBookingAction(id: string) {
+  return answer(id, "declined", "declined");
+}
+export async function cancelBookingAction(id: string) {
+  return answer(id, "cancelled", "cancelledByStaff");
 }
 
 export async function deleteBookingAction(id: string) {
@@ -56,8 +82,72 @@ export async function createBookingAction(input: unknown): Promise<ActionResult>
   const p = adminBookingSchema.safeParse(input);
   if (!p.success) return { ok: false, error: firstError(p.error) };
   return guarded(async () => {
-    await repo().createBooking({ ...p.data, email: "", status: "confirmed", source: "admin" }, null);
+    const booking = await repo().createBooking({ ...p.data, email: "", status: "confirmed", source: "admin" }, null);
+    after(() => announce({ type: "phoneBooking", booking }));
   });
+}
+
+// ---------- notifications (this device) -------------------------------
+
+const deviceSchema = z.object({
+  endpoint: z.url().max(1000),
+  keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(8).max(100) }),
+  label: z.string().trim().max(60),
+});
+
+const cookieOpts = { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: ADMIN_PATH, maxAge: 60 * 60 * 24 * 400 } as const;
+
+/** Saves this browser's push subscription and remembers it in a cookie. */
+export async function registerDeviceAction(input: unknown): Promise<ActionResult & { id?: string }> {
+  await requireAdmin();
+  const p = deviceSchema.safeParse(input);
+  if (!p.success) return { ok: false, error: "Iscrizione alle notifiche non valida" };
+  const jar = await cookies();
+  const r = repo();
+  const known = (await r.listDevices()).find((d) => d.endpoint === p.data.endpoint || d.id === jar.get(DEVICE_COOKIE)?.value);
+  const now = new Date().toISOString();
+  const device: PushDevice = {
+    id: known?.id ?? randomUUID(),
+    endpoint: p.data.endpoint,
+    p256dh: p.data.keys.p256dh,
+    auth: p.data.keys.auth,
+    label: p.data.label || "Dispositivo",
+    prefs: known?.prefs ?? DEFAULT_PREFS,
+    created_at: known?.created_at ?? now,
+    last_used_at: now,
+  };
+  const res = await guarded(() => r.saveDevice(device));
+  if (res.ok) jar.set(DEVICE_COOKIE, device.id, cookieOpts);
+  return { ...res, id: device.id };
+}
+
+export async function updateDevicePrefsAction(id: string, prefs: NotifyPrefs): Promise<ActionResult> {
+  return guarded(async () => {
+    const r = repo();
+    const d = (await r.listDevices()).find((x) => x.id === id);
+    if (!d) throw new Error("Dispositivo non trovato");
+    const clean = z.object({ requests: z.boolean(), changes: z.boolean(), cancellations: z.boolean(), staff: z.boolean() }).parse(prefs);
+    await r.saveDevice({ ...d, prefs: clean });
+  });
+}
+
+export async function removeDeviceAction(id: string): Promise<ActionResult> {
+  const res = await guarded(() => repo().deleteDevice(id));
+  const jar = await cookies();
+  if (res.ok && jar.get(DEVICE_COOKIE)?.value === id) jar.delete({ name: DEVICE_COOKIE, path: ADMIN_PATH });
+  return res;
+}
+
+/** Sends a test notification to this device only. */
+export async function testPushAction(): Promise<ActionResult> {
+  await requireAdmin();
+  const id = (await cookies()).get(DEVICE_COOKIE)?.value;
+  if (!id) return { ok: false, error: "Attiva prima le notifiche su questo dispositivo" };
+  const { sent } = await pushToDevices(
+    { title: "Prova notifica · Prometeo Gestione", body: "Funziona: qui arriveranno le nuove richieste.", url: ADMIN_PATH, tag: "test", badge: await pendingCount() },
+    { group: "requests", onlyDevice: id },
+  );
+  return sent ? { ok: true } : { ok: false, error: "Notifica non inviata: riattiva le notifiche su questo dispositivo" };
 }
 
 // ---------- settings -------------------------------------------------

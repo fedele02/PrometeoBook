@@ -8,7 +8,8 @@
     "start": "node node_modules/next/dist/bin/next start",
     "lint": "node node_modules/eslint/bin/eslint.js",
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
-    "seed:supabase": "node --env-file=.env.local scripts/seed-supabase.ts"
+    "seed:supabase": "node --env-file=.env.local scripts/seed-supabase.ts",
+    "assets:app": "node scripts/make-app-assets.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -19,6 +20,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
+    "web-push": "^3.6.7",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -27,6 +29,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
