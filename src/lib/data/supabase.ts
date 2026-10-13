@@ -101,6 +101,11 @@ export function supabaseRepo(): Repo {
       if (res.error) throw new Error(res.error.message);
       return (res.data as Booking | null) ?? null;
     },
+    async getBookingByCode(code) {
+      const res = await db.from("bookings").select("*").eq("short_code", code).maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return (res.data as Booking | null) ?? null;
+    },
     async coversByTime(date, ignoreId) {
       let q = db.from("bookings").select("time, people").eq("date", date).in("status", ["pending", "confirmed"]);
       if (ignoreId) q = q.neq("id", ignoreId);

@@ -130,7 +130,7 @@ async function test(to: string | undefined) {
       to: dest,
       type: "template",
       externalId: `test-${Date.now()}`,
-      template: { name: def.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(def, def.example, "prova") },
+      template: { name: def.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(def, def.example, "K7M2QX9T") },
     },
   });
   if (!res.ok) die(`Invio non riuscito (${res.code}): ${res.message}`);

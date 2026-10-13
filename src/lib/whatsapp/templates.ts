@@ -23,8 +23,8 @@ export type TemplateDef = {
   body: string;
   /** one sample value per variable, required by Meta's review */
   example: string[];
-  /** URL button: `path` is appended to the site URL; with `withToken` the booking's private code follows it */
-  button: { text: string; path: string; withToken: boolean };
+  /** URL button: `path` is appended to the site URL; with `withCode` the short code of the guest's link follows it (/p/K7M2QX9T) */
+  button: { text: string; path: string; withCode: boolean };
 };
 
 const SAMPLE = ["Mario", "4 persone", "sabato 18 ottobre", "21:00"];
@@ -37,7 +37,7 @@ export const TEMPLATES: Record<WhatsappKind, TemplateDef> = {
       "Ciao {{1}}, abbiamo ricevuto la tua richiesta di prenotazione per {{2}}, {{3}} alle ore {{4}}.\n\n" +
       "Non è ancora una conferma: ti scriveremo qui appena il ristorante l'avrà verificata.",
     example: SAMPLE,
-    button: { text: "Gestisci prenotazione", path: "/prenotazione/", withToken: true },
+    button: { text: "Gestisci prenotazione", path: "/p/", withCode: true },
   },
   confirmed: {
     kind: "confirmed",
@@ -46,7 +46,7 @@ export const TEMPLATES: Record<WhatsappKind, TemplateDef> = {
       "Ciao {{1}}, la tua prenotazione è confermata: {{2}}, {{3}} alle ore {{4}}.\n\n" +
       "Ti aspettiamo in {{5}}. Se devi modificarla o annullarla, usa il pulsante qui sotto.",
     example: [...SAMPLE, "Via Michele Torraca 10, Matera"],
-    button: { text: "Gestisci prenotazione", path: "/prenotazione/", withToken: true },
+    button: { text: "Gestisci prenotazione", path: "/p/", withCode: true },
   },
   declined: {
     kind: "declined",
@@ -55,7 +55,7 @@ export const TEMPLATES: Record<WhatsappKind, TemplateDef> = {
       "Ciao {{1}}, ci dispiace: non possiamo accettare la tua richiesta per {{2}}, {{3}} alle ore {{4}}, perché {{5}}.\n\n" +
       "Puoi scegliere un altro giorno o un altro orario dal nostro sito.",
     example: [...SAMPLE, "siamo al completo a quell'ora"],
-    button: { text: "Prenota un'altra data", path: "/prenota", withToken: false },
+    button: { text: "Prenota un'altra data", path: "/prenota", withCode: false },
   },
   cancelled: {
     kind: "cancelled",
@@ -64,7 +64,7 @@ export const TEMPLATES: Record<WhatsappKind, TemplateDef> = {
       "Ciao {{1}}, ti informiamo che la tua prenotazione per {{2}}, {{3}} alle ore {{4}} è stata annullata dal ristorante.\n\n" +
       "Per qualsiasi chiarimento rispondi a questo messaggio o chiamaci.",
     example: SAMPLE,
-    button: { text: "Prenota di nuovo", path: "/prenota", withToken: false },
+    button: { text: "Prenota di nuovo", path: "/prenota", withCode: false },
   },
 };
 
@@ -81,18 +81,23 @@ export const cleanParam = (s: string) => s.replace(/[\r\n\t]+/g, " ").replace(/ 
 const fill = (text: string, values: string[]) => text.replace(/\{\{(\d+)\}\}/g, (_, n) => values[Number(n) - 1] ?? "");
 const trimSlash = (url: string) => url.replace(/\/+$/, "");
 
-export const buttonUrl = (def: TemplateDef, siteUrl: string, token?: string) =>
-  `${trimSlash(siteUrl)}${def.button.path}${def.button.withToken ? token ?? "" : ""}`;
+/** Where the button leads. `link`: the guest's own page, used by the buttons `withCode`. */
+export const buttonUrl = (def: TemplateDef, siteUrl: string, link?: string) =>
+  def.button.withCode && link ? link : `${trimSlash(siteUrl)}${def.button.path}`;
 
-/** The message as the guest reads it (also the text for sending it by hand). */
-export function renderMessage(def: TemplateDef, values: string[], siteUrl: string, token?: string) {
-  return `${fill(def.body, values.map(cleanParam))}\n\n${def.button.text}: ${buttonUrl(def, siteUrl, token)}`;
+/**
+ * The message as the guest reads it when the staff sends it by hand: a typed
+ * message has no button, so the link is written out and called a link.
+ */
+export function renderMessage(def: TemplateDef, values: string[], siteUrl: string, link?: string) {
+  const body = fill(def.body, values.map(cleanParam)).replace("il pulsante qui sotto", "il link qui sotto");
+  return `${body}\n\n${def.button.text}: ${buttonUrl(def, siteUrl, link)}`;
 }
 
-/** `components` for YCloud's send API. */
-export function sendComponents(def: TemplateDef, values: string[], token?: string) {
+/** `components` for YCloud's send API; `code`: the short code of the guest's link. */
+export function sendComponents(def: TemplateDef, values: string[], code?: string) {
   const components: Record<string, unknown>[] = [{ type: "body", parameters: values.map((v) => ({ type: "text", text: cleanParam(v) })) }];
-  if (def.button.withToken) components.push({ type: "button", sub_type: "url", index: 0, parameters: [{ type: "text", text: token ?? "" }] });
+  if (def.button.withCode) components.push({ type: "button", sub_type: "url", index: 0, parameters: [{ type: "text", text: code ?? "" }] });
   return components;
 }
 
@@ -110,8 +115,8 @@ export function createRequest(def: TemplateDef, siteUrl: string, wabaId: string)
       {
         type: "BUTTONS",
         buttons: [
-          def.button.withToken
-            ? { type: "URL", text: def.button.text, url: `${base}${def.button.path}{{1}}`, example: [`${base}${def.button.path}2f6d0c1e-4b7a-4c3e-9a51-7d2b8e6f1a90`] }
+          def.button.withCode
+            ? { type: "URL", text: def.button.text, url: `${base}${def.button.path}{{1}}`, example: [`${base}${def.button.path}K7M2QX9T`] }
             : { type: "URL", text: def.button.text, url: `${base}${def.button.path}` },
         ],
       },

@@ -17,13 +17,15 @@ export const DECLINE_REASONS: { id: DeclineReason; label: string }[] = [
   { id: "custom", label: "Scrivo io il messaggio" },
 ];
 
-export const manageUrl = (b: Pick<Booking, "manage_token">) => `${SITE_URL}/prenotazione/${b.manage_token}`;
+/** The guest's page as sent in the messages: the short link /p/K7M2QX9T (the long one only before the 2026-10-18 migration). */
+export const manageUrl = (b: Pick<Booking, "manage_token" | "short_code">) =>
+  b.short_code ? `${SITE_URL}/p/${b.short_code}` : `${SITE_URL}/prenotazione/${b.manage_token}`;
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] || name.trim();
 const guests = (n: number) => `${n} ${n === 1 ? "persona" : "persone"}`;
 const address = (s: Settings) => [s.address, s.city].filter(Boolean).join(", ");
 
-type MessageBooking = Pick<Booking, "name" | "people" | "date" | "time" | "manage_token">;
+type MessageBooking = Pick<Booking, "name" | "people" | "date" | "time" | "manage_token" | "short_code">;
 
 /** Values for the template variables {{1}}, {{2}}… in order. */
 export function templateValues(kind: WhatsappKind, b: MessageBooking, s: Settings, reason?: DeclineReason): string[] {
@@ -35,7 +37,7 @@ export function templateValues(kind: WhatsappKind, b: MessageBooking, s: Setting
 
 /** The message exactly as the guest receives it: used for the preview and for sending it by hand. */
 export function whatsappText(kind: WhatsappKind, b: MessageBooking, s: Settings, reason?: DeclineReason) {
-  return renderMessage(TEMPLATES[kind], templateValues(kind, b, s, reason), SITE_URL, b.manage_token);
+  return renderMessage(TEMPLATES[kind], templateValues(kind, b, s, reason), SITE_URL, manageUrl(b));
 }
 
 /** Start of a free-text message ("Scrivo io il messaggio"): only sent by hand. */

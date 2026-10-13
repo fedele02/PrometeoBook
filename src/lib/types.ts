@@ -130,9 +130,14 @@ export type Booking = {
   source: "web" | "admin";
   /** secret for the guest's private page (/prenotazione/<token>) */
   manage_token: string;
+  /**
+   * short link of the same page, the one sent to the guest: /p/<short_code>
+   * (missing only on a database where the 2026-10-18 migration hasn't run yet)
+   */
+  short_code?: string;
 };
 
-export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token">;
+export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token" | "short_code">;
 
 /** What a guest can change on their own booking. */
 export type BookingChange = Pick<Booking, "date" | "time" | "people" | "notes">;

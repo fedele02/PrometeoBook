@@ -79,7 +79,7 @@ export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Set
       to,
       type: "template",
       externalId: record.id,
-      template: { name: def.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(def, templateValues(kind, b, s, opts.reason), b.manage_token) },
+      template: { name: def.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(def, templateValues(kind, b, s, opts.reason), b.short_code) },
     },
   });
 

@@ -3,6 +3,28 @@
 --  Run once in Supabase → SQL Editor (safe to re-run).
 -- =====================================================================
 
+-- ---------- short code of the guest's link (/p/K7M2QX9T) ----------
+
+-- random bytes from gen_random_uuid() (always available, no extension needed);
+-- bytes 6 and 8 hold the uuid version/variant and are skipped
+create or replace function public.gen_short_code()
+returns text
+language plpgsql
+volatile
+as $$
+declare
+  alphabet constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  bytes bytea := decode(replace(gen_random_uuid()::text, '-', ''), 'hex');
+  picks constant int[] := array[0, 1, 2, 3, 4, 5, 10, 11];
+  code text := '';
+  i int;
+begin
+  foreach i in array picks loop
+    code := code || substr(alphabet, (get_byte(bytes, i) % 32) + 1, 1);
+  end loop;
+  return code;
+end $$;
+
 -- ---------- tables ----------------------------------------------------
 
 create table if not exists public.settings (
@@ -48,7 +70,9 @@ create table if not exists public.bookings (
   status      text not null default 'pending' check (status in ('pending','confirmed','declined','cancelled')),
   source      text not null default 'web' check (source in ('web','admin')),
   -- secret of the guest's private page /prenotazione/<token>
-  manage_token uuid not null default gen_random_uuid() unique
+  manage_token uuid not null default gen_random_uuid() unique,
+  -- short link of the same page, sent in the messages: /p/<short_code>
+  short_code  text not null default public.gen_short_code() unique
 );
 create index if not exists bookings_date_idx on public.bookings (date, time);
 create index if not exists bookings_phone_idx on public.bookings (phone, created_at);

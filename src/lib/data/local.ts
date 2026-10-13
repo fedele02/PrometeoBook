@@ -5,10 +5,16 @@ import { randomUUID } from "node:crypto";
 import { seedCategories, seedDishes, seedSettings } from "../seed";
 import { isActive } from "../customers";
 import { serviceLabel } from "../time";
+import { newShortCode, SHORT_CODE_ALPHABET, SHORT_CODE_LENGTH } from "../short-code";
 import type { Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
 import { SlotFullError, type Repo } from "./repo";
 
 type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[]; whatsapp: WhatsappMessage[]; errors: ErrorLog[] };
+
+const codeFromToken = (token: string) => {
+  const hex = token.replace(/-/g, "");
+  return Array.from({ length: SHORT_CODE_LENGTH }, (_, i) => SHORT_CODE_ALPHABET[parseInt(hex.slice(i * 2, i * 2 + 2), 16) % 32]).join("");
+};
 
 const DB_FILE = path.join(process.cwd(), "data", "local-db.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -30,7 +36,11 @@ async function read(): Promise<Db> {
     db.whatsapp ??= [];
     db.errors ??= [];
     // bookings saved before guests could manage them get their private link
-    for (const b of db.bookings) b.manage_token ??= randomUUID();
+    for (const b of db.bookings) {
+      b.manage_token ??= randomUUID();
+      // derived from the token, so the same booking always gets the same code
+      b.short_code ??= codeFromToken(b.manage_token);
+    }
     return db;
   } catch {
     return {
@@ -116,6 +126,7 @@ export const localRepo: Repo = {
   },
   getBooking: async (id) => (await read()).bookings.find((b) => b.id === id) ?? null,
   getBookingByToken: async (token) => (await read()).bookings.find((b) => b.manage_token === token) ?? null,
+  getBookingByCode: async (code) => (await read()).bookings.find((b) => b.short_code === code) ?? null,
   async coversByTime(date, ignoreId) {
     const out: Record<string, number> = {};
     for (const b of (await read()).bookings)
@@ -126,7 +137,7 @@ export const localRepo: Repo = {
     locked(async () => {
       const db = await read();
       if (maxCovers !== null && taken(db, nb.date, nb.time) + nb.people > maxCovers) throw new SlotFullError();
-      const booking: Booking = { ...nb, id: randomUUID(), created_at: new Date().toISOString(), manage_token: randomUUID() };
+      const booking: Booking = { ...nb, id: randomUUID(), created_at: new Date().toISOString(), manage_token: randomUUID(), short_code: newShortCode() };
       db.bookings.push(booking);
       await write(db);
       return booking;

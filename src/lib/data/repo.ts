@@ -28,6 +28,8 @@ export interface Repo {
   listBookings(from: string, to: string): Promise<Booking[]>;
   getBooking(id: string): Promise<Booking | null>;
   getBookingByToken(token: string): Promise<Booking | null>;
+  /** by the short code of the guest's link (/p/<code>), already normalized */
+  getBookingByCode(code: string): Promise<Booking | null>;
   /** guests already booked per time on a date (only pending and confirmed hold seats) */
   coversByTime(date: string, ignoreId?: string): Promise<Record<string, number>>;
   /**
