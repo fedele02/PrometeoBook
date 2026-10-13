@@ -188,11 +188,8 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
               <FieldLabel label="Coperti massimi per servizio" hint="Persone in tutto a pranzo e, separatamente, a cena. Raggiunto il limite il sito risponde “siamo al completo”">
                 <input type="number" min={1} value={s.booking.maxCoversPerService} onChange={(e) => upBooking({ maxCoversPerService: num(e.target.value) })} className={smallInput} />
               </FieldLabel>
-              <FieldLabel label="Conferma automatica fino a" hint="persone: queste prenotazioni sono confermate subito; oltre, le conferma lo staff (0 = sempre lo staff)">
+              <FieldLabel label="Conferma automatica fino a" hint="persone: confermate subito. Oltre, e fino ai coperti del servizio, sono richieste che conferma lo staff (0 = sempre lo staff)">
                 <input type="number" min={0} value={s.booking.autoConfirmUpTo} onChange={(e) => upBooking({ autoConfirmUpTo: num(e.target.value) })} className={smallInput} />
-              </FieldLabel>
-              <FieldLabel label="Persone massime per prenotazione" hint="Oltre, il cliente viene invitato a chiamare">
-                <input type="number" min={1} value={s.booking.maxPartySize} onChange={(e) => upBooking({ maxPartySize: num(e.target.value) })} className={smallInput} />
               </FieldLabel>
               <FieldLabel label="Intervallo tra gli orari">
                 <select value={s.booking.slotMinutes} onChange={(e) => upBooking({ slotMinutes: Number(e.target.value) })} className={smallInput}>

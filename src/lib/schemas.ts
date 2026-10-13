@@ -40,8 +40,7 @@ export const settingsSchema = z.object({
     slotMinutes: z.number().int().min(10).max(120),
     lastBookingBeforeClose: z.number().int().min(0).max(240),
     maxCoversPerService: z.number().int().min(1).max(1000),
-    autoConfirmUpTo: z.number().int().min(0).max(60),
-    maxPartySize: z.number().int().min(1).max(60),
+    autoConfirmUpTo: z.number().int().min(0).max(1000),
     daysAhead: z.number().int().min(1).max(365),
     minNoticeMinutes: z.number().int().min(0).max(1440),
     whatsappAuto: z.boolean(),
@@ -75,7 +74,7 @@ export const dishSchema = z.object({
 export const adminBookingSchema = z.object({
   date: ymd,
   time: hhmm,
-  people: z.number().int().min(1).max(60),
+  people: z.number().int().min(1).max(1000),
   name: text(80).min(2, "Inserisci il nome"),
   phone: text(25).min(6, "Inserisci il telefono"),
   notes: text(500),

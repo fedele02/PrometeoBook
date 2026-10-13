@@ -54,7 +54,8 @@ const phone = z
 const bookingSchema = z.object({
   date: z.string().refine(isValidDate),
   time: z.string().regex(/^\d{2}:\d{2}$/),
-  people: z.number().int().min(1).max(60),
+  // up to a whole service: the service limit is checked when saving
+  people: z.number().int().min(1).max(1000),
   name: z.string().trim().min(2, "Scrivi il tuo nome").max(80),
   phone,
   notes: z.string().trim().max(500).default(""),
@@ -76,8 +77,6 @@ async function checkSlot(
   ignoreId?: string,
 ): Promise<{ error: string; field?: string; slotFull?: boolean } | null> {
   if (!s.booking.enabled) return { error: "Le prenotazioni online sono momentaneamente sospese." };
-  if (b.people > s.booking.maxPartySize)
-    return { error: `Per gruppi oltre ${s.booking.maxPartySize} persone chiamaci: troveremo la soluzione migliore.`, field: "people" };
   if (!isBookableDate(s, b.date)) return { error: "Questa data non è prenotabile.", field: "date" };
   if (!slotsForDate(s, b.date).some((svc) => svc.times.includes(b.time)))
     return { error: "Questo orario non è più disponibile.", field: "time", slotFull: true };
@@ -141,7 +140,8 @@ export async function submitBooking(input: BookingInput): Promise<BookingResult>
 const changeSchema = z.object({
   date: z.string().refine(isValidDate),
   time: z.string().regex(/^\d{2}:\d{2}$/),
-  people: z.number().int().min(1).max(60),
+  // up to a whole service: the service limit is checked when saving
+  people: z.number().int().min(1).max(1000),
   notes: z.string().trim().max(500).default(""),
 });
 

@@ -206,7 +206,7 @@ function EditBooking({
   const [error, setError] = useState<string | null>(null);
   const [loading, startLoading] = useTransition();
   const [saving, startSaving] = useTransition();
-  const max = settings.booking.maxPartySize;
+  const max = settings.booking.maxCoversPerService;
 
   // free times for the chosen day and party size (the booking's own seats count as free)
   useEffect(() => {

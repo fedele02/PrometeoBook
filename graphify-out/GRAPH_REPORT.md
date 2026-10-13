@@ -1,17 +1,17 @@
 # Graph Report - PrometeoBook  (2026-10-13)
 
 ## Corpus Check
-- 103 files · ~52,718 words
+- 104 files · ~52,968 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .example 1, .css 1)
 
 ## Summary
-- 783 nodes · 2300 edges · 22 communities (16 shown, 6 thin omitted)
+- 784 nodes · 2299 edges · 23 communities (16 shown, 7 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 76 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `534eeb27`
+- Built from commit: `50659c4f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -43,9 +43,9 @@
 3. `base()` - 35 edges
 4. `formatDateLong()` - 28 edges
 5. `react` - 27 edges
-6. `BookingWizard()` - 26 edges
+6. `BookingWizard()` - 25 edges
 7. `logError()` - 25 edges
-8. `telHref()` - 24 edges
+8. `telHref()` - 23 edges
 9. `serviceLabel()` - 23 edges
 10. `MenuEditor()` - 21 edges
 
@@ -71,7 +71,7 @@
 - **Prometeo Gestione staff app UI** — design_system_prometeo_fine_dining_master_staff_app_design, design_system_prometeo_fine_dining_master_request_card, design_system_prometeo_fine_dining_master_timeline_in_sala, design_system_prometeo_fine_dining_master_whatsapp_status_ui, design_system_prometeo_fine_dining_master_app_icon [EXTRACTED 1.00]
 - **Booking request lifecycle (request, staff decision, WhatsApp reply, customer edit)** — readme_booking_flow, readme_booking_states, readme_accept_reject_flow, readme_whatsapp_ycloud, readme_customer_booking_page, readme_create_booking_function [INFERRED 0.85]
 
-## Communities (22 total, 6 thin omitted)
+## Communities (23 total, 7 thin omitted)
 
 ### Community 0 - "BookingsBoard.tsx"
 Cohesion: 0.06
@@ -139,20 +139,20 @@ Nodes (18): @supabase/supabase-js, db, force, steps, DishSheet(), DishRow(), mat
 
 ## Knowledge Gaps
 - **176 isolated node(s):** `eslintConfig`, `nextConfig`, `name`, `version`, `private` (+171 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 212 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 213 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `next` connect `next` to `BookingsBoard.tsx`, `Icons.tsx`, `gestore-prometeo-2026/actions.ts`, `BookingWizard.tsx`, `package.json`, `types.ts`, `auth.ts`, `MenuView.tsx`?**
-  _High betweenness centrality (0.224) - this node is a cross-community bridge._
+  _High betweenness centrality (0.223) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `nextConfig`, `name` to the rest of the system?**
   _176 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `BookingsBoard.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.06269592476489028 - nodes in this community are weakly interconnected._
 - **Why does `src/app/globals.css (@theme tokens)` connect `README - Prometeo Fine Dining sito web` to `next`?**
-  _High betweenness centrality (0.139) - this node is a cross-community bridge._
+  _High betweenness centrality (0.138) - this node is a cross-community bridge._
 - **Should `next` be split into smaller, more focused modules?**
   _Cohesion score 0.06586538461538462 - nodes in this community are weakly interconnected._
 - **Should `Icons.tsx` be split into smaller, more focused modules?**

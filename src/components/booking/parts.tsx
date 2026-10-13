@@ -41,21 +41,34 @@ export function Choice({
 
 export function MorePeople({ max, value, onPick }: { max: number; value: number | null; onPick: (n: number) => void }) {
   const [n, setN] = useState(value && value > 8 ? value : 9);
+  const clamp = (v: number) => Math.min(max, Math.max(9, v));
   return (
-    <div className="mt-3 flex items-center gap-2 border border-ink/15 p-2.5">
-      <span className="flex-1 pl-2 font-semibold">Più persone</span>
-      <button type="button" onClick={() => setN(Math.max(9, n - 1))} aria-label="Meno" className="grid h-12 w-12 place-items-center border border-ink/15">
-        <IconMinus className="h-5 w-5" />
-      </button>
-      <span className="w-9 text-center text-2xl font-semibold" aria-live="polite">
-        {n}
-      </span>
-      <button type="button" onClick={() => setN(Math.min(max, n + 1))} aria-label="Più" className="grid h-12 w-12 place-items-center border border-ink/15">
-        <IconPlus className="h-5 w-5" />
-      </button>
-      <button type="button" onClick={() => onPick(n)} className="btn btn-dark min-h-12 px-5">
-        Ok
-      </button>
+    // label on its own line: the controls always fit, down to 320 px phones
+    <div className="mt-3 border border-ink/15 p-2.5">
+      <p className="px-1.5 pb-2 font-semibold">Più persone</p>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setN(clamp(n - 1))} aria-label="Meno" className="grid h-12 w-12 shrink-0 place-items-center border border-ink/15">
+          <IconMinus className="h-5 w-5" />
+        </button>
+        {/* typed or stepped: groups can be as large as a whole service */}
+        <input
+          type="number"
+          inputMode="numeric"
+          min={9}
+          max={max}
+          value={n}
+          onChange={(e) => setN(Number(e.target.value) || 9)}
+          onBlur={() => setN(clamp(n))}
+          aria-label="Numero di persone"
+          className="h-12 w-12 min-w-0 border-0 bg-transparent p-0 text-center text-2xl font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+        />
+        <button type="button" onClick={() => setN(clamp(n + 1))} aria-label="Più" className="grid h-12 w-12 shrink-0 place-items-center border border-ink/15">
+          <IconPlus className="h-5 w-5" />
+        </button>
+        <button type="button" onClick={() => onPick(clamp(n))} className="btn btn-dark ml-auto min-h-12 shrink-0 px-5">
+          Ok
+        </button>
+      </div>
     </div>
   );
 }

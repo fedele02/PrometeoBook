@@ -67,7 +67,7 @@ export const seedSettings: Settings = {
     },
     {
       q: "Siamo un gruppo numeroso, possiamo prenotare?",
-      a: "Online puoi prenotare fino a 10 persone. Per gruppi più numerosi chiamaci: organizziamo insieme la serata.",
+      a: "Sì, anche online: per i gruppi più numerosi la prenotazione è una richiesta e ti confermiamo su WhatsApp.",
     },
     {
       q: "Come segnalo allergie o intolleranze?",
@@ -94,7 +94,6 @@ export const seedSettings: Settings = {
     lastBookingBeforeClose: 60,
     maxCoversPerService: 40,
     autoConfirmUpTo: 4,
-    maxPartySize: 10,
     daysAhead: 60,
     minNoticeMinutes: 60,
     whatsappAuto: true,

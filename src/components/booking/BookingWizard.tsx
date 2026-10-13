@@ -35,7 +35,8 @@ const shortDate = (d: string) => {
 
 /** `whatsappAuto`: the guest gets an automatic "request received" message on WhatsApp. */
 export function BookingWizard({ settings, whatsappAuto = false }: { settings: Settings; whatsappAuto?: boolean }) {
-  const max = settings.booking.maxPartySize;
+  // any party can book online, up to a whole service; above the auto-confirm size it's a request
+  const max = settings.booking.maxCoversPerService;
   const [step, setStep] = useState<Step>(0);
   const [dir, setDir] = useState(1);
   // Rome date from the browser clock (the page itself is cached).
@@ -187,17 +188,6 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                   ))}
                 </div>
                 {max > 8 && <MorePeople max={max} value={people} onPick={pickPeople} />}
-                <p className="mt-5 text-ink/60">
-                  Siete più di {max}?{" "}
-                  {settings.phone ? (
-                    <a href={telHref(settings.phone)} className="font-semibold text-ink underline underline-offset-4">
-                      Chiamaci
-                    </a>
-                  ) : (
-                    "Contattaci"
-                  )}{" "}
-                  e organizziamo insieme.
-                </p>
               </>
             )}
 

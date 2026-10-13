@@ -30,10 +30,11 @@ export type BookingSettings = {
    * when a booking doesn't fit, the site answers "siamo al completo"
    */
   maxCoversPerService: number;
-  /** online bookings up to this many guests are confirmed at once; above, the staff confirms (0 = always the staff) */
+  /**
+   * online bookings up to this many guests are confirmed at once; above, up to
+   * the whole service, they are requests for the staff (0 = always the staff)
+   */
   autoConfirmUpTo: number;
-  /** above this the guest is asked to call */
-  maxPartySize: number;
   /** how far in the future guests can book */
   daysAhead: number;
   /** minimum notice for same-day bookings */

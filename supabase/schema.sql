@@ -40,7 +40,7 @@ create table if not exists public.bookings (
   created_at  timestamptz not null default now(),
   date        date not null,
   time        text not null check (time ~ '^[0-2][0-9]:[0-5][0-9]$'),
-  people      int  not null check (people between 1 and 60),
+  people      int  not null check (people between 1 and 1000),
   name        text not null check (char_length(name) between 2 and 80),
   phone       text not null check (char_length(phone) between 6 and 25),
   email       text not null default '',
