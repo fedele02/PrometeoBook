@@ -1,4 +1,4 @@
-import type { Booking, BookingChange, BookingStatus, Category, Dish, ErrorLog, MenuData, NewBooking, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
+import type { Booking, BookingChange, BookingStatus, Category, Dish, ErrorLog, MenuData, NewBooking, OnlineStatus, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
 
 export class SlotFullError extends Error {
   constructor() {
@@ -30,13 +30,16 @@ export interface Repo {
   getBookingByToken(token: string): Promise<Booking | null>;
   /** guests already booked per time on a date (only pending and confirmed hold seats) */
   coversByTime(date: string, ignoreId?: string): Promise<Record<string, number>>;
-  /** atomically checks capacity and inserts; throws SlotFullError */
+  /**
+   * Atomically checks that the booking fits in its service (lunch or dinner of
+   * that day: max guests per service, null = no limit) and inserts; throws SlotFullError.
+   */
   createBooking(b: NewBooking, maxCovers: number | null): Promise<Booking>;
   /**
-   * A guest changes their booking: atomically checks the new slot (ignoring the
-   * booking's own seats), saves and puts it back to "pending". Throws SlotFullError.
+   * A guest changes their booking: atomically checks the new service (ignoring the
+   * booking's own seats), saves it with the given status. Throws SlotFullError.
    */
-  changeBooking(id: string, change: BookingChange, maxCovers: number): Promise<Booking>;
+  changeBooking(id: string, change: BookingChange, status: OnlineStatus, maxCovers: number): Promise<Booking>;
   setBookingStatus(id: string, status: BookingStatus): Promise<void>;
   deleteBooking(id: string): Promise<void>;
   countBookingsByPhone(phone: string, sinceIso: string): Promise<number>;

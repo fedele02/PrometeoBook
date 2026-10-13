@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { seedCategories, seedDishes, seedSettings } from "../seed";
 import { isActive } from "../customers";
+import { serviceLabel } from "../time";
 import type { Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
 import { SlotFullError, type Repo } from "./repo";
 
@@ -58,9 +59,11 @@ const mutate = (fn: (db: Db) => void | Promise<void>) =>
     await write(db);
   });
 
-/** guests holding seats at a date and time */
+/** guests holding seats in the service (lunch or dinner) of a date and time */
 const taken = (db: Db, date: string, time: string, ignoreId?: string) =>
-  db.bookings.filter((b) => b.date === date && b.time === time && isActive(b) && b.id !== ignoreId).reduce((n, b) => n + b.people, 0);
+  db.bookings
+    .filter((b) => b.date === date && serviceLabel(b.time) === serviceLabel(time) && isActive(b) && b.id !== ignoreId)
+    .reduce((n, b) => n + b.people, 0);
 
 const byPos = <T extends { position: number }>(a: T, b: T) => a.position - b.position;
 
@@ -128,13 +131,13 @@ export const localRepo: Repo = {
       await write(db);
       return booking;
     }),
-  changeBooking: (id, change, maxCovers) =>
+  changeBooking: (id, change, status, maxCovers) =>
     locked(async () => {
       const db = await read();
       const b = db.bookings.find((x) => x.id === id);
       if (!b) throw new Error("Prenotazione non trovata");
       if (taken(db, change.date, change.time, id) + change.people > maxCovers) throw new SlotFullError();
-      Object.assign(b, change, { status: "pending" });
+      Object.assign(b, change, { status });
       await write(db);
       return b;
     }),

@@ -1,8 +1,22 @@
-import type { Booking, BookingStatus, Settings } from "./types";
+import type { Booking, BookingStatus, OnlineStatus, Settings } from "./types";
 import { formatDateLong, romeNow, serviceLabel, toMin } from "./time";
 
 /** Bookings that hold seats: waiting for an answer or confirmed. */
 export const isActive = (b: { status: BookingStatus }) => b.status === "pending" || b.status === "confirmed";
+
+/** An online booking is confirmed at once up to `autoConfirmUpTo` guests; above, the staff confirms it. */
+export const onlineStatus = (s: Settings, people: number): OnlineStatus =>
+  people <= s.booking.autoConfirmUpTo ? "confirmed" : "pending";
+
+/**
+ * Guests already holding seats in each service (lunch, dinner) of a day,
+ * from the guests per time (Repo.coversByTime).
+ */
+export function coversByService(byTime: Record<string, number>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [time, n] of Object.entries(byTime)) out[serviceLabel(time)] = (out[serviceLabel(time)] ?? 0) + n;
+  return out;
+}
 
 /** Guests can change or cancel until the same notice the site asks for new bookings. */
 export function guestCanManage(b: Booking, s: Settings, now = romeNow()) {

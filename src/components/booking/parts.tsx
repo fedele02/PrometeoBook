@@ -84,11 +84,11 @@ export function Slots({
       </div>
     );
 
-  const allFull = !avail.closed && avail.services.every((s) => s.slots.every((x) => !x.free));
+  const allFull = !avail.closed && avail.services.every((s) => s.full);
   if (avail.closed || allFull)
     return (
       <div className="mt-6 border border-ink/15 bg-paper p-5">
-        <p className="text-lg font-semibold">{avail.closed ? avail.reason : "Questo giorno è al completo."}</p>
+        <p className="text-lg font-semibold">{avail.closed ? avail.reason : "Siamo spiacenti, siamo al completo per questo giorno."}</p>
         <p className="mt-1 text-ink/60">Prova con un altro giorno{phone ? " oppure chiamaci" : ""}.</p>
         <button type="button" onClick={onChangeDay} className="btn btn-dark mt-5 w-full">
           Scegli un altro giorno
@@ -106,14 +106,20 @@ export function Slots({
       {avail.services.map((svc) => (
         <div key={svc.label}>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-ink/55">{svc.label}</p>
-          <div className="mt-2.5 grid grid-cols-3 gap-2.5">
-            {svc.slots.map((s) => (
-              <Choice key={s.time} disabled={!s.free} selected={time === s.time} onClick={() => onPick(s.time)} className="h-14 flex-col text-lg">
-                {s.time}
-                {!s.free && <span className="text-[0.7rem] font-medium">completo</span>}
-              </Choice>
-            ))}
-          </div>
+          {svc.full ? (
+            // seats are counted per service: when it's full, every time of it is
+            <p className="mt-2.5 border border-ink/15 bg-paper px-4 py-3 text-ink/70">
+              Siamo spiacenti, siamo al completo per {svc.label === "Pranzo" ? "il pranzo" : "la cena"}.
+            </p>
+          ) : (
+            <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+              {svc.slots.map((s) => (
+                <Choice key={s.time} disabled={!s.free} selected={time === s.time} onClick={() => onPick(s.time)} className="h-14 flex-col text-lg">
+                  {s.time}
+                </Choice>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>

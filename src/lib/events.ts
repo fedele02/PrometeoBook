@@ -15,6 +15,8 @@ import type { Booking, BookingChange, NotifyPrefs } from "./types";
  */
 export type BookingEvent =
   | { type: "requested"; booking: Booking }
+  /** online booking of a small party, confirmed at once (Locale e orari → conferma automatica) */
+  | { type: "autoConfirmed"; booking: Booking }
   | { type: "changed"; booking: Booking; before: BookingChange }
   | { type: "cancelledByGuest"; booking: Booking }
   | { type: "accepted" | "declined" | "cancelledByStaff" | "phoneBooking"; booking: Booking };
@@ -36,6 +38,12 @@ function describe(e: BookingEvent): { group: keyof NotifyPrefs; title: string; b
         title: `Nuova richiesta · ${b.name}`,
         body: `${guests(b.people)} · ${when} (${serviceLabel(b.time).toLowerCase()})${b.notes ? `\n«${clip(b.notes, 70)}»` : ""}`,
       };
+    case "autoConfirmed":
+      return {
+        group: "requests",
+        title: `Nuova prenotazione · ${b.name}`,
+        body: `${guests(b.people)} · ${when} (${serviceLabel(b.time).toLowerCase()}) · confermata in automatico${b.notes ? `\n«${clip(b.notes, 70)}»` : ""}`,
+      };
     case "changed": {
       const was = e.before;
       const diff = [
@@ -44,7 +52,8 @@ function describe(e: BookingEvent): { group: keyof NotifyPrefs; title: string; b
         was.people !== b.people && `${was.people} → ${guests(b.people)}`,
         was.notes !== b.notes && "note aggiornate",
       ].filter(Boolean);
-      return { group: "changes", title: `Modificata · ${b.name}`, body: `${diff.join(" · ") || when}\nDa riconfermare` };
+      const after = b.status === "confirmed" ? "Resta confermata" : "Da riconfermare";
+      return { group: "changes", title: `Modificata · ${b.name}`, body: `${diff.join(" · ") || when}\n${after}` };
     }
     case "cancelledByGuest":
       return {
@@ -92,7 +101,7 @@ export async function announce(e: BookingEvent) {
     const staffAction = d.group === "staff";
     await Promise.all([
       pushToDevices(payload, { group: d.group, exceptDevice: staffAction ? await currentDevice() : undefined }),
-      e.type === "requested" ? notifyNewBooking(e.booking) : null,
+      e.type === "requested" || e.type === "autoConfirmed" ? notifyNewBooking(e.booking) : null,
     ]);
   } catch (err) {
     await logError("Notifica allo staff non inviata", err, { event: e.type, booking: e.booking.id });

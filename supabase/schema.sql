@@ -124,26 +124,27 @@ create policy "admin reads own row" on public.admins for select to authenticated
 
 -- bookings, push_devices, whatsapp_messages, error_logs: no policies → nobody but the server (secret key) can touch them.
 
--- ---------- atomic booking -------------------------------------------
+-- ---------- atomic booking (seats per service: lunch before 17:00, dinner from 17:00) ----
 
 create or replace function public.create_booking(p jsonb, max_covers int)
 returns public.bookings
 language plpgsql
 as $$
 declare
-  v_date  date := (p->>'date')::date;
-  v_time  text := p->>'time';
-  v_people int := (p->>'people')::int;
-  v_taken int;
-  v_row   public.bookings;
+  v_date   date := (p->>'date')::date;
+  v_time   text := p->>'time';
+  v_people int  := (p->>'people')::int;
+  v_lunch  boolean := (p->>'time') < '17:00';
+  v_taken  int;
+  v_row    public.bookings;
 begin
-  -- serialize bookings for the same slot
-  perform pg_advisory_xact_lock(hashtext(v_date::text || ' ' || v_time));
+  -- serialize bookings for the same service of the same day
+  perform pg_advisory_xact_lock(hashtext(v_date::text || case when v_lunch then ' lunch' else ' dinner' end));
 
   if max_covers is not null then
     select coalesce(sum(people), 0) into v_taken
       from public.bookings
-     where date = v_date and time = v_time and status in ('pending','confirmed');
+     where date = v_date and (time < '17:00') = v_lunch and status in ('pending','confirmed');
     if v_taken + v_people > max_covers then
       raise exception 'SLOT_FULL';
     end if;
@@ -160,8 +161,8 @@ end $$;
 revoke all on function public.create_booking(jsonb, int) from public, anon, authenticated;
 grant execute on function public.create_booking(jsonb, int) to service_role;
 
--- A guest changes date, time, guests or notes: same slot lock, the booking's own
--- seats don't count, and it goes back to "pending" for the staff to confirm again.
+-- A guest changes date, time, guests or notes: same service lock, the booking's own
+-- seats don't count; the server decides the new status (confirmed or pending).
 create or replace function public.change_booking(p_id uuid, p jsonb, max_covers int)
 returns public.bookings
 language plpgsql
@@ -170,21 +171,23 @@ declare
   v_date   date := (p->>'date')::date;
   v_time   text := p->>'time';
   v_people int  := (p->>'people')::int;
+  v_lunch  boolean := (p->>'time') < '17:00';
   v_taken  int;
   v_row    public.bookings;
 begin
-  perform pg_advisory_xact_lock(hashtext(v_date::text || ' ' || v_time));
+  perform pg_advisory_xact_lock(hashtext(v_date::text || case when v_lunch then ' lunch' else ' dinner' end));
 
   select coalesce(sum(people), 0) into v_taken
     from public.bookings
-   where date = v_date and time = v_time and status in ('pending','confirmed') and id <> p_id;
+   where date = v_date and (time < '17:00') = v_lunch and status in ('pending','confirmed') and id <> p_id;
   if v_taken + v_people > max_covers then
     raise exception 'SLOT_FULL';
   end if;
 
   update public.bookings
      set date = v_date, time = v_time, people = v_people,
-         notes = coalesce(p->>'notes', ''), status = 'pending'
+         notes = coalesce(p->>'notes', ''),
+         status = case when p->>'status' in ('pending','confirmed') then p->>'status' else 'pending' end
    where id = p_id
   returning * into v_row;
 

@@ -71,7 +71,8 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
 - **Tab change**: instant — `(panel)/loading.tsx` shows pulsing `white/6` placeholders (title, subtitle, three cards; pulse only with motion allowed) while the page loads.
 - **Section labels**: Hanken 700, 11 px, uppercase, tracking .22em, gold (ember for “da confermare”).
 - **Day strip**: only days with bookings, 56×76 chips radius 12, selected = gold fill; ember badge = requests; “Altri” opens the date picker.
-- **Covers card**: big number 40 px, “in attesa” on the right; bars per bookable time, track = max covers per time, ember from 80 %.
+- **Covers card**: big number 40 px + “su {max per servizio} · N tavoli”, number turns ember from 80 % of the service limit; “in attesa” on the right; bars per bookable time scaled to the busiest time (gold, information only).
+- **Booking summary (site)**: confirmed at once = `ok` pill “Confermata”, title “Prenotazione confermata”, note box with `ok` left border; request = `ember` pill “In attesa di conferma” as before. A full service replaces its time grid with a `paper` box “Siamo spiacenti, siamo al completo per il pranzo/la cena”.
 - **Request card**: radius 16, gold border when it is the newest, ember otherwise. Accetta (gold) · Rifiuta (ember outline) · call (square).
   Below 360 px the tick icon is hidden and letter spacing tightens so the three buttons always fit.
   *Rifiuta* opens in place: Cinzel question, radio reasons, WhatsApp preview on `chat` (#1f2c24), Indietro + “Rifiuta e invia” (ember).

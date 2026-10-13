@@ -2,19 +2,20 @@
 
 import { after } from "next/server";
 import { z } from "zod";
-import { guestCanManage, sameServiceBooking } from "@/lib/customers";
+import { coversByService, guestCanManage, onlineStatus, sameServiceBooking } from "@/lib/customers";
 import { repo } from "@/lib/data";
 import { SlotFullError } from "@/lib/data/repo";
 import { announce } from "@/lib/events";
 import { sendWhatsappOrAlert } from "@/lib/whatsapp";
 import { dayState, formatDateLong, isBookableDate, isValidDate, serviceLabel, slotsForDate } from "@/lib/time";
-import type { Settings } from "@/lib/types";
+import type { OnlineStatus, Settings } from "@/lib/types";
 import { logError } from "@/lib/errors";
 
 export type Slot = { time: string; free: boolean };
 export type Availability =
   | { closed: true; reason: string }
-  | { closed: false; services: { label: string; slots: Slot[] }[] };
+  /** `full`: the service (lunch or dinner) has no room left for this many guests */
+  | { closed: false; services: { label: string; full: boolean; slots: Slot[] }[] };
 
 /**
  * Free times for a date. When a guest is changing their booking, pass its token:
@@ -33,14 +34,15 @@ export async function getAvailability(date: string, people: number, token?: stri
   if (!services.length) return { closed: true, reason: "Per oggi non ci sono più orari disponibili" };
 
   const own = token ? await r.getBookingByToken(token) : null;
-  const taken = await r.coversByTime(date, own?.id);
-  const max = s.booking.maxCoversPerSlot;
+  // seats are counted per service: lunch and dinner of the day, whatever the time
+  const taken = coversByService(await r.coversByTime(date, own?.id));
+  const max = s.booking.maxCoversPerService;
   return {
     closed: false,
-    services: services.map((svc) => ({
-      label: svc.label,
-      slots: svc.times.map((time) => ({ time, free: (taken[time] ?? 0) + people <= max })),
-    })),
+    services: services.map((svc) => {
+      const full = (taken[svc.label] ?? 0) + people > max;
+      return { label: svc.label, full, slots: svc.times.map((time) => ({ time, free: !full })) };
+    }),
   };
 }
 
@@ -63,7 +65,8 @@ const bookingSchema = z.object({
 
 export type BookingInput = z.input<typeof bookingSchema>;
 export type BookingResult =
-  | { ok: true; token: string }
+  /** status: confirmed at once (small party) or a request for the staff */
+  | { ok: true; token: string; status: OnlineStatus }
   | { ok: false; error: string; field?: string; slotFull?: boolean };
 
 /** Rules shared by a new booking and a guest's change. Returns an error or null. */
@@ -88,14 +91,15 @@ async function checkSlot(
   return null;
 }
 
-const SLOT_TAKEN = "Ci dispiace, questo orario è appena stato riempito. Scegline un altro.";
+const fullMessage = (time: string) =>
+  `Siamo spiacenti, siamo al completo per ${serviceLabel(time) === "Pranzo" ? "il pranzo" : "la cena"} di quel giorno. Prova un altro giorno o chiamaci.`;
 
 export async function submitBooking(input: BookingInput): Promise<BookingResult> {
   const parsed = bookingSchema.safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const field = String(issue.path[0] ?? "");
-    if (field === "website") return { ok: true, token: "" }; // silently drop bots
+    if (field === "website") return { ok: true, token: "", status: "pending" }; // silently drop bots
     return { ok: false, error: issue.message, field };
   }
   const b = parsed.data;
@@ -110,16 +114,23 @@ export async function submitBooking(input: BookingInput): Promise<BookingResult>
   if ((await r.countBookingsByPhone(b.phone, since)) >= 4)
     return { ok: false, error: "Hai già effettuato diverse prenotazioni oggi. Per modifiche chiamaci." };
 
+  // small parties are confirmed at once, larger ones wait for the staff;
+  // a service with no room left refuses the booking ("siamo al completo")
+  const status = onlineStatus(s, b.people);
   try {
-    // online bookings are always requests: the staff accepts or refuses them
     const booking = await r.createBooking(
-      { date: b.date, time: b.time, people: b.people, name: b.name, phone: b.phone, email: "", notes: b.notes, status: "pending", source: "web" },
-      s.booking.maxCoversPerSlot,
+      { date: b.date, time: b.time, people: b.people, name: b.name, phone: b.phone, email: "", notes: b.notes, status, source: "web" },
+      s.booking.maxCoversPerService,
     );
-    after(() => Promise.all([announce({ type: "requested", booking }), sendWhatsappOrAlert("requested", booking, s)]));
-    return { ok: true, token: booking.manage_token };
+    after(() =>
+      Promise.all([
+        announce({ type: status === "confirmed" ? "autoConfirmed" : "requested", booking }),
+        sendWhatsappOrAlert(status === "confirmed" ? "confirmed" : "requested", booking, s),
+      ]),
+    );
+    return { ok: true, token: booking.manage_token, status };
   } catch (e) {
-    if (e instanceof SlotFullError) return { ok: false, error: SLOT_TAKEN, field: "time", slotFull: true };
+    if (e instanceof SlotFullError) return { ok: false, error: fullMessage(b.time), field: "time", slotFull: true };
     await logError("Prenotazione dal sito non salvata", e, { date: b.date, time: b.time, people: b.people });
     return { ok: false, error: "Si è verificato un problema. Riprova o chiamaci." };
   }
@@ -134,7 +145,7 @@ const changeSchema = z.object({
   notes: z.string().trim().max(500).default(""),
 });
 
-export type GuestResult = { ok: true } | { ok: false; error: string; field?: string; slotFull?: boolean };
+export type GuestResult = { ok: true; status?: OnlineStatus } | { ok: false; error: string; field?: string; slotFull?: boolean };
 
 const TOO_LATE = "Mancano poche ore: per modifiche o per annullare chiamaci.";
 
@@ -154,12 +165,20 @@ export async function changeMyBooking(token: string, input: z.input<typeof chang
   const invalid = await checkSlot(s, { ...change, phone: b.phone }, b.id);
   if (invalid) return { ok: false, ...invalid };
 
+  // same rule as a new booking: a small party stays confirmed, otherwise the staff confirms again
+  const status = onlineStatus(s, change.people);
   try {
-    const booking = await r.changeBooking(b.id, change, s.booking.maxCoversPerSlot);
-    after(() => announce({ type: "changed", booking, before }));
-    return { ok: true };
+    const booking = await r.changeBooking(b.id, change, status, s.booking.maxCoversPerService);
+    after(() =>
+      Promise.all([
+        announce({ type: "changed", booking, before }),
+        // the guest gets the confirmation with the new details
+        status === "confirmed" ? sendWhatsappOrAlert("confirmed", booking, s) : null,
+      ]),
+    );
+    return { ok: true, status };
   } catch (e) {
-    if (e instanceof SlotFullError) return { ok: false, error: SLOT_TAKEN, field: "time", slotFull: true };
+    if (e instanceof SlotFullError) return { ok: false, error: fullMessage(change.time), field: "time", slotFull: true };
     await logError("Modifica del cliente non salvata", e, { booking: b.id });
     return { ok: false, error: "Si è verificato un problema. Riprova o chiamaci." };
   }

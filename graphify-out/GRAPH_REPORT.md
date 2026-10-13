@@ -1,17 +1,17 @@
 # Graph Report - PrometeoBook  (2026-10-13)
 
 ## Corpus Check
-- 102 files · ~51,304 words
+- 103 files · ~52,718 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .example 1, .css 1)
 
 ## Summary
-- 776 nodes · 2275 edges · 21 communities (16 shown, 5 thin omitted)
+- 783 nodes · 2300 edges · 22 communities (16 shown, 6 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 76 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `37cc5ed1`
+- Built from commit: `534eeb27`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,11 +20,11 @@
 - next
 - Icons.tsx
 - gestore-prometeo-2026/actions.ts
-- RequestCard.tsx
+- index.ts
 - README - Prometeo Fine Dining sito web
 - BookingWizard.tsx
 - package.json
-- index.ts
+- types.ts
 - auth.ts
 - compilerOptions
 - schema.sql
@@ -33,7 +33,7 @@
 - public.whatsapp_messages
 - postcss.config.mjs
 - vercel.json
-- seed.ts
+- MenuView.tsx
 - instrumentation-client.ts
 - 2026-10-15_error-logs.sql
 
@@ -43,22 +43,22 @@
 3. `base()` - 35 edges
 4. `formatDateLong()` - 28 edges
 5. `react` - 27 edges
-6. `BookingWizard()` - 25 edges
+6. `BookingWizard()` - 26 edges
 7. `logError()` - 25 edges
 8. `telHref()` - 24 edges
-9. `MenuEditor()` - 21 edges
-10. `RequestCard()` - 21 edges
+9. `serviceLabel()` - 23 edges
+10. `MenuEditor()` - 21 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Design pre-delivery checklist` --semantically_similar_to--> `Pre-Delivery Checks (typecheck, lint, build, mobile 320-430px)`  [INFERRED] [semantically similar]
   design-system/prometeo-fine-dining/MASTER.md → CLAUDE.md
 - `Design pre-delivery checklist` --semantically_similar_to--> `No invented content rule`  [INFERRED] [semantically similar]
   design-system/prometeo-fine-dining/MASTER.md → CLAUDE.md
-- `test()` --calls--> `toE164()`  [EXTRACTED]
-  scripts/whatsapp.ts → src/lib/whatsapp/ycloud.ts
 - `Prometeo Fine Dining Website` --references--> `Motion Rules (fade+slide-up, stagger, reducedMotion user)`  [EXTRACTED]
   README.md → design-system/prometeo-fine-dining/MASTER.md
 - `App icon (logo + GESTIONE, Penpot export)` --conceptually_related_to--> `Prometeo Gestione staff app (installable PWA)`  [INFERRED]
+  design-system/prometeo-fine-dining/MASTER.md → README.md
+- `Request card (Accetta / Rifiuta / call, in-place refusal)` --implements--> `Accetta / Rifiuta request flow`  [INFERRED]
   design-system/prometeo-fine-dining/MASTER.md → README.md
 
 ## Import Cycles
@@ -71,47 +71,47 @@
 - **Prometeo Gestione staff app UI** — design_system_prometeo_fine_dining_master_staff_app_design, design_system_prometeo_fine_dining_master_request_card, design_system_prometeo_fine_dining_master_timeline_in_sala, design_system_prometeo_fine_dining_master_whatsapp_status_ui, design_system_prometeo_fine_dining_master_app_icon [EXTRACTED 1.00]
 - **Booking request lifecycle (request, staff decision, WhatsApp reply, customer edit)** — readme_booking_flow, readme_booking_states, readme_accept_reject_flow, readme_whatsapp_ycloud, readme_customer_booking_page, readme_create_booking_function [INFERRED 0.85]
 
-## Communities (21 total, 5 thin omitted)
+## Communities (22 total, 6 thin omitted)
 
 ### Community 0 - "BookingsBoard.tsx"
-Cohesion: 0.08
-Nodes (66): BookingsPage(), metadata, metadata, RequestsPage(), BookingInput, BookingResult, bookingSchema, changeSchema (+58 more)
+Cohesion: 0.06
+Nodes (76): acceptBookingAction(), answer(), AnswerResult, cancelBookingAction(), declineBookingAction(), deleteBookingAction(), BookingsPage(), metadata (+68 more)
 
 ### Community 1 - "next"
-Cohesion: 0.05
-Nodes (59): nextConfig, motion, next, created, Detail(), metadata, cinzel, cormorant (+51 more)
+Cohesion: 0.07
+Nodes (41): nextConfig, motion, next, cinzel, cormorant, hanken, metadata, viewport (+33 more)
 
 ### Community 2 - "Icons.tsx"
 Cohesion: 0.06
-Nodes (75): icons(), OUT, png(), splashes(), removeDeviceAction(), testPushAction(), updateDevicePrefsAction(), AdminRootLayout() (+67 more)
+Nodes (69): icons(), OUT, png(), splashes(), registerDeviceAction(), removeDeviceAction(), updateDevicePrefsAction(), AdminRootLayout() (+61 more)
 
 ### Community 3 - "gestore-prometeo-2026/actions.ts"
 Cohesion: 0.06
-Nodes (78): qrcode, react, zod, ActionResult, AnswerResult, clearErrorLogsAction(), cookieOpts, createBookingAction() (+70 more)
+Nodes (77): qrcode, react, zod, ActionResult, clearErrorLogsAction(), cookieOpts, createBookingAction(), deleteCategoryAction() (+69 more)
 
-### Community 4 - "RequestCard.tsx"
-Cohesion: 0.07
-Nodes (53): bad(), check(), [command = "check", arg], commands, createTemplates(), createWebhook(), die(), digits() (+45 more)
+### Community 4 - "index.ts"
+Cohesion: 0.06
+Nodes (57): bad(), check(), [command = "check", arg], commands, createTemplates(), createWebhook(), die(), digits() (+49 more)
 
 ### Community 5 - "README - Prometeo Fine Dining sito web"
 Cohesion: 0.06
 Nodes (54): AGENTS.md, Data model chain (types.ts -> schemas.ts -> seed.ts -> admin forms), Graphify Update Workflow, graphify knowledge graph workflow, Pre-Delivery Checks (typecheck, lint, build, mobile 320-430px), Design System MASTER - Prometeo Fine Dining, App icon (logo + GESTIONE, Penpot export), Color Tokens (ink, ink-2, ink-3, cream, gold, gold-deep, paper, ember) (+46 more)
 
 ### Community 6 - "BookingWizard.tsx"
-Cohesion: 0.11
-Nodes (40): Availability, cancelMyBooking(), changeMyBooking(), BookingPage(), metadata, GuestBookingPage(), metadata, BookingWizard() (+32 more)
+Cohesion: 0.07
+Nodes (73): created, CustomersPage(), Detail(), metadata, plural(), Availability, BookingInput, BookingResult (+65 more)
 
 ### Community 7 - "package.json"
 Cohesion: 0.04
-Nodes (46): eslintConfig, dependencies, motion, next, qrcode, react, react-dom, server-only (+38 more)
+Nodes (47): eslintConfig, dependencies, motion, next, qrcode, react, react-dom, server-only (+39 more)
 
-### Community 8 - "index.ts"
-Cohesion: 0.05
-Nodes (67): web-push, GET(), hits, POST(), tooMany(), POST(), metadata, SettingsPage() (+59 more)
+### Community 8 - "types.ts"
+Cohesion: 0.08
+Nodes (39): GET(), hits, POST(), tooMany(), metadata, NotificationsPage(), onRequestError(), cut() (+31 more)
 
 ### Community 9 - "auth.ts"
 Cohesion: 0.16
-Nodes (23): server-only, @supabase/ssr, @supabase/supabase-js, loginAction(), logoutAction(), LoginPage(), metadata, LoginForm() (+15 more)
+Nodes (22): server-only, @supabase/ssr, loginAction(), logoutAction(), LoginPage(), metadata, LoginForm(), Admin (+14 more)
 
 ### Community 10 - "compilerOptions"
 Cohesion: 0.11
@@ -133,29 +133,29 @@ Nodes (3): public.whatsapp_messages, whatsapp_messages_booking_idx, whatsapp_mes
 Cohesion: 0.50
 Nodes (3): crons, regions, $schema
 
-### Community 20 - "seed.ts"
-Cohesion: 0.24
-Nodes (8): db, force, steps, lunchDinner, seedCategories, seedDishes, seedSettings, Category
+### Community 20 - "MenuView.tsx"
+Cohesion: 0.14
+Nodes (18): @supabase/supabase-js, db, force, steps, DishSheet(), DishRow(), matches(), MenuView() (+10 more)
 
 ## Knowledge Gaps
 - **176 isolated node(s):** `eslintConfig`, `nextConfig`, `name`, `version`, `private` (+171 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 210 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 212 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `next` connect `next` to `BookingsBoard.tsx`, `Icons.tsx`, `gestore-prometeo-2026/actions.ts`, `RequestCard.tsx`, `BookingWizard.tsx`, `package.json`, `index.ts`, `auth.ts`?**
-  _High betweenness centrality (0.226) - this node is a cross-community bridge._
+- **Why does `next` connect `next` to `BookingsBoard.tsx`, `Icons.tsx`, `gestore-prometeo-2026/actions.ts`, `BookingWizard.tsx`, `package.json`, `types.ts`, `auth.ts`, `MenuView.tsx`?**
+  _High betweenness centrality (0.224) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `nextConfig`, `name` to the rest of the system?**
   _176 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `BookingsBoard.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.07626582278481013 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06269592476489028 - nodes in this community are weakly interconnected._
 - **Why does `src/app/globals.css (@theme tokens)` connect `README - Prometeo Fine Dining sito web` to `next`?**
-  _High betweenness centrality (0.140) - this node is a cross-community bridge._
+  _High betweenness centrality (0.139) - this node is a cross-community bridge._
 - **Should `next` be split into smaller, more focused modules?**
-  _Cohesion score 0.05368289637952559 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06586538461538462 - nodes in this community are weakly interconnected._
 - **Should `Icons.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.055642633228840124 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05949367088607595 - nodes in this community are weakly interconnected._
 - **Should `gestore-prometeo-2026/actions.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.059096459096459095 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05982905982905983 - nodes in this community are weakly interconnected._

@@ -205,13 +205,16 @@ function DayStrip({ days, today, date }: { days: DayChip[]; today: string; date:
 /* ---------- covers + chart by time ------------------------------------ */
 
 function Capacity({ rows, service, settings }: { rows: Row[]; service: DayService | undefined; settings: Settings }) {
-  const max = settings.booking.maxCoversPerSlot;
+  const max = settings.booking.maxCoversPerService;
   const label = service?.label ?? "Servizio";
   const list = rows.filter((b) => isActive(b) && serviceLabel(b.time) === label);
   const covers = list.reduce((n, b) => n + b.people, 0);
   const waiting = rows.filter((b) => b.status === "pending").length;
   const byTime = (t: string) => list.filter((b) => b.time === t).reduce((n, b) => n + b.people, 0);
   const times = service?.times ?? [];
+  // the limit is per service: near it the number turns ember; bars only show when guests arrive
+  const nearFull = covers / max >= 0.8;
+  const peak = Math.max(1, ...times.map(byTime));
   const dense = times.length > 8;
 
   return (
@@ -220,9 +223,9 @@ function Capacity({ rows, service, settings }: { rows: Row[]; service: DayServic
         <div className="min-w-0 flex-1">
           <h2 className={`${sectionLabel} text-gold`}>Coperti · {label}</h2>
           <p className="mt-1.5 flex items-baseline gap-2">
-            <span className="text-[2.5rem] font-bold leading-none">{covers}</span>
+            <span className={`text-[2.5rem] font-bold leading-none ${nearFull ? "text-ember" : ""}`}>{covers}</span>
             <span className="text-cream/55">
-              {list.length} {list.length === 1 ? "tavolo" : "tavoli"}
+              su {max} · {list.length} {list.length === 1 ? "tavolo" : "tavoli"}
             </span>
           </p>
         </div>
@@ -234,18 +237,17 @@ function Capacity({ rows, service, settings }: { rows: Row[]; service: DayServic
 
       {times.length > 0 && (
         <div className="mt-5 border-t border-white/[0.06] pt-4">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-cream/50">Per fascia oraria · max {max}</p>
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-cream/50">Per fascia oraria</p>
           <ol className="mt-3 flex items-end justify-between gap-1.5" aria-label="Coperti per orario">
             {times.map((t, i) => {
               const n = byTime(t);
-              const ratio = Math.min(n / max, 1);
-              const full = n / max >= 0.8;
+              const ratio = n / peak;
               return (
                 <li key={t} className="flex min-w-0 max-w-12 flex-1 flex-col items-center" aria-label={`${t}: ${n} coperti`}>
                   <span className={`mb-1 h-4 text-xs font-bold ${n ? "" : "invisible"}`}>{n}</span>
                   <span className="relative block h-20 w-full overflow-hidden rounded-md bg-white/[0.04]">
                     <span
-                      className={`absolute inset-x-0 bottom-0 rounded-md transition-[height] duration-500 ${full ? "bg-ember" : "bg-gold"}`}
+                      className={`absolute inset-x-0 bottom-0 rounded-md transition-[height] duration-500 bg-gold`}
                       style={{ height: n ? `${Math.max(ratio * 100, 4)}%` : "3px", opacity: n ? 1 : 0.3 }}
                     />
                   </span>

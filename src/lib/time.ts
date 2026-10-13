@@ -67,6 +67,7 @@ export function relativeDay(d: string, today = romeNow().date) {
   return formatDateLong(d);
 }
 
+/** Lunch before 17:00, dinner from 17:00. The same split is in the SQL functions (supabase/schema.sql). */
 export const serviceLabel = (open: string) => (toMin(open) < 17 * 60 ? "Pranzo" : "Cena");
 
 export type DayState = { closed: true; reason: string } | { closed: false };

@@ -8,6 +8,7 @@ import { forgetBooking, rememberBooking } from "@/lib/guest-bookings";
 import { telHref } from "@/lib/site";
 import { capitalize, formatDateLong, romeNow } from "@/lib/time";
 import type { BookingStatus, Settings } from "@/lib/types";
+import { onlineStatus } from "@/lib/customers";
 import { IconCalendar, IconClock, IconPhone, IconUser, IconUsers, IconWhatsapp } from "../Icons";
 import { Calendar } from "./Calendar";
 import { Choice, ErrorBox, MorePeople, Slots, Title } from "./parts";
@@ -226,7 +227,12 @@ function EditBooking({
     setError(null);
     startSaving(async () => {
       const res = await changeMyBooking(token, { date, time, people, notes });
-      if (res.ok) onClose("Modifica inviata: il ristorante la riconfermerà con un messaggio WhatsApp.");
+      if (res.ok)
+        onClose(
+          res.status === "confirmed"
+            ? "Modifica salvata: la prenotazione resta confermata."
+            : "Modifica inviata: il ristorante la riconfermerà con un messaggio WhatsApp.",
+        );
       else {
         setError(res.error);
         if (res.slotFull) {
@@ -240,7 +246,11 @@ function EditBooking({
   return (
     <div className="border border-ink/15 bg-white p-5 sm:p-7">
       <Title>Modifica la prenotazione</Title>
-      <p className="mt-1 text-ink/60">Dopo la modifica il ristorante dovrà riconfermarla.</p>
+      <p className="mt-1 text-ink/60">
+        {onlineStatus(settings, people) === "confirmed"
+          ? "La modifica è confermata subito, se c'è posto."
+          : "Dopo la modifica il ristorante dovrà riconfermarla."}
+      </p>
 
       <h3 className="mt-7 text-sm font-semibold uppercase tracking-[0.16em] text-ink/55">Persone</h3>
       <div className="mt-2.5 grid grid-cols-4 gap-2.5">

@@ -6,7 +6,8 @@ import { useRef, useState, useTransition } from "react";
 import { getAvailability, submitBooking, type Availability } from "@/app/(site)/prenota/actions";
 import { telHref } from "@/lib/site";
 import { addDays, capitalize, dateParts, dayState, formatDateLong, romeNow } from "@/lib/time";
-import type { Settings } from "@/lib/types";
+import type { OnlineStatus, Settings } from "@/lib/types";
+import { onlineStatus } from "@/lib/customers";
 import { IconCalendar, IconCheck, IconClock, IconUser, IconUsers, IconWhatsapp } from "../Icons";
 import { Calendar } from "./Calendar";
 import { Choice, ErrorBox, Field, MorePeople, Slots, Title } from "./parts";
@@ -49,11 +50,15 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
   const [notes, setNotes] = useState("");
   const [privacy, setPrivacy] = useState(false);
   const [hp, setHp] = useState("");
+  // small parties are confirmed at once: the button and its note say so
+  const instant = people !== null && onlineStatus(settings, people) === "confirmed";
 
   const [avail, setAvail] = useState<Availability | null>(null);
   const [error, setError] = useState<{ msg: string; field?: string } | null>(null);
   // private link token of the request just sent ("" when dropped as spam)
   const [done, setDone] = useState<string | null>(null);
+  // confirmed at once (small party) or a request for the staff
+  const [doneStatus, setDoneStatus] = useState<OnlineStatus>("pending");
   const [pending, startTransition] = useTransition();
   const top = useRef<HTMLDivElement>(null);
 
@@ -99,6 +104,7 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
           localStorage.setItem(SAVED, JSON.stringify({ name, phone }));
         } catch {}
         if (res.token) rememberBooking({ token: res.token, date: date!, time: time!, people: people! });
+        setDoneStatus(res.status);
         setDone(res.token);
         top.current?.scrollIntoView({ behavior: "smooth" });
       } else if (res.slotFull) {
@@ -114,6 +120,7 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
     return (
       <Done
         token={done}
+        status={doneStatus}
         settings={settings}
         whatsappAuto={whatsappAuto}
         summary={{ date: date!, time: time!, people: people!, name: name.trim(), phone: phone.trim(), notes: notes.trim() }}
@@ -291,9 +298,11 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                 {error && <ErrorBox>{error.msg}</ErrorBox>}
 
                 <button type="submit" disabled={pending} className="btn btn-dark mt-6 min-h-16 w-full text-[0.95rem] tracking-[0.1em] disabled:opacity-60">
-                  {pending ? "Invio in corso…" : "Invia richiesta"}
+                  {pending ? "Invio in corso…" : instant ? "Conferma prenotazione" : "Invia richiesta"}
                 </button>
-                <p className="mt-3 text-center text-[0.95rem] text-ink/60">Il tavolo è tuo dopo la nostra conferma su WhatsApp.</p>
+                <p className="mt-3 text-center text-[0.95rem] text-ink/60">
+                  {instant ? "La prenotazione è confermata subito." : "Il tavolo è tuo dopo la nostra conferma su WhatsApp."}
+                </p>
               </form>
             )}
           </motion.div>
@@ -307,18 +316,21 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
 
 function Done({
   token,
+  status,
   settings,
   whatsappAuto,
   summary,
   onAgain,
 }: {
   token: string;
+  status: OnlineStatus;
   settings: Settings;
   whatsappAuto: boolean;
   summary: { date: string; time: string; people: number; name: string; phone: string; notes: string };
   onAgain: () => void;
 }) {
   const firstName = summary.name.split(" ")[0];
+  const confirmed = status === "confirmed";
   const rows = [
     { icon: IconCalendar, label: "Giorno", value: capitalize(formatDateLong(summary.date)) },
     { icon: IconClock, label: "Ora", value: summary.time },
@@ -334,12 +346,25 @@ function Done({
       className="border border-ink/15 bg-white p-6 sm:p-8"
       role="status"
     >
-      <p className="inline-flex items-center gap-2 rounded-full bg-ember/15 px-3 py-1 text-sm font-semibold text-ink">
-        <span className="h-2 w-2 rounded-full bg-ember" aria-hidden />
-        In attesa di conferma
-      </p>
-      <h2 className="mt-4 text-[1.7rem] font-semibold leading-tight">Richiesta inviata</h2>
-      <p className="mt-2 text-lg text-ink/70">Grazie {firstName}, ecco il riepilogo della tua richiesta.</p>
+      {confirmed ? (
+        <>
+          <p className="inline-flex items-center gap-2 rounded-full bg-ok/15 px-3 py-1 text-sm font-semibold text-ink">
+            <span className="h-2 w-2 rounded-full bg-ok" aria-hidden />
+            Confermata
+          </p>
+          <h2 className="mt-4 text-[1.7rem] font-semibold leading-tight">Prenotazione confermata</h2>
+          <p className="mt-2 text-lg text-ink/70">Grazie {firstName}, ti aspettiamo al ristorante.</p>
+        </>
+      ) : (
+        <>
+          <p className="inline-flex items-center gap-2 rounded-full bg-ember/15 px-3 py-1 text-sm font-semibold text-ink">
+            <span className="h-2 w-2 rounded-full bg-ember" aria-hidden />
+            In attesa di conferma
+          </p>
+          <h2 className="mt-4 text-[1.7rem] font-semibold leading-tight">Richiesta inviata</h2>
+          <p className="mt-2 text-lg text-ink/70">Grazie {firstName}, ecco il riepilogo della tua richiesta.</p>
+        </>
+      )}
 
       <dl className="mt-6 divide-y divide-ink/10 border-y border-ink/15">
         {rows.map(({ icon: Icon, label, value }) => (
@@ -357,14 +382,26 @@ function Done({
         )}
       </dl>
 
-      <div className="mt-6 border-l-2 border-ink bg-paper px-4 py-4">
-        <p className="font-semibold">Questa è una richiesta di prenotazione, non ancora confermata.</p>
-        <p className="mt-1 text-ink/75">
-          Il ristorante la verificherà e ti invierà la conferma con un messaggio WhatsApp al numero{" "}
-          <span className="whitespace-nowrap font-semibold text-ink">{summary.phone}</span>. Il tavolo è riservato solo dopo la conferma.
-        </p>
-        {whatsappAuto && <p className="mt-2 text-ink/75">Ti abbiamo appena scritto su WhatsApp per confermarti che la richiesta è arrivata.</p>}
-      </div>
+      {confirmed ? (
+        <div className="mt-6 border-l-2 border-ok bg-paper px-4 py-4">
+          <p className="font-semibold">La tua prenotazione è confermata: il tavolo è riservato.</p>
+          <p className="mt-1 text-ink/75">Ti aspettiamo da Prometeo. Se cambia qualcosa puoi modificarla o annullarla dal link qui sotto.</p>
+          {whatsappAuto && (
+            <p className="mt-2 text-ink/75">
+              Ti abbiamo appena inviato la conferma su WhatsApp al numero <span className="whitespace-nowrap font-semibold text-ink">{summary.phone}</span>.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 border-l-2 border-ink bg-paper px-4 py-4">
+          <p className="font-semibold">Questa è una richiesta di prenotazione, non ancora confermata.</p>
+          <p className="mt-1 text-ink/75">
+            Il ristorante la verificherà e ti invierà la conferma con un messaggio WhatsApp al numero{" "}
+            <span className="whitespace-nowrap font-semibold text-ink">{summary.phone}</span>. Il tavolo è riservato solo dopo la conferma.
+          </p>
+          {whatsappAuto && <p className="mt-2 text-ink/75">Ti abbiamo appena scritto su WhatsApp per confermarti che la richiesta è arrivata.</p>}
+        </div>
+      )}
 
       <div className="mt-6 flex flex-col gap-3">
         <button

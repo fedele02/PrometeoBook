@@ -25,8 +25,13 @@ export type BookingSettings = {
   slotMinutes: number;
   /** last bookable time = close − this */
   lastBookingBeforeClose: number;
-  /** max guests that can be booked for the same time */
-  maxCoversPerSlot: number;
+  /**
+   * max guests per service (lunch, dinner) of a day, whatever the time:
+   * when a booking doesn't fit, the site answers "siamo al completo"
+   */
+  maxCoversPerService: number;
+  /** online bookings up to this many guests are confirmed at once; above, the staff confirms (0 = always the staff) */
+  autoConfirmUpTo: number;
   /** above this the guest is asked to call */
   maxPartySize: number;
   /** how far in the future guests can book */
@@ -130,6 +135,9 @@ export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token">;
 
 /** What a guest can change on their own booking. */
 export type BookingChange = Pick<Booking, "date" | "time" | "people" | "notes">;
+
+/** Status of an online booking: confirmed at once (small party) or a request for the staff. */
+export type OnlineStatus = Extract<BookingStatus, "pending" | "confirmed">;
 
 /** Automatic WhatsApp messages to guests (approved Meta templates, sent through YCloud). */
 export type WhatsappKind = "requested" | "confirmed" | "declined" | "cancelled";

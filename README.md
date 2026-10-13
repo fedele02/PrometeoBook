@@ -23,7 +23,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 
 1. Crea un progetto su [supabase.com](https://supabase.com) (regione **EU – Frankfurt**, per il GDPR).
 2. **SQL Editor** → incolla ed esegui tutto `supabase/schema.sql` (tabelle, sicurezza RLS, funzioni di prenotazione e modifica atomiche, dispositivi per le notifiche, bucket foto `media`).
-   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`), poi `2026-10-15_error-logs.sql` (tabella `error_logs`, Log errori). Si possono rilanciare senza danni.
+   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`), poi `2026-10-15_error-logs.sql` (tabella `error_logs`, Log errori), poi `2026-10-16_coperti-per-servizio.sql` (posti per servizio, modifica che resta confermata). Si possono rilanciare senza danni.
 3. **Project Settings → API Keys**: copia URL, *publishable key* e *secret key* in `.env.local` (vedi `.env.example`).
 4. Carica menu e impostazioni iniziali: `npm run seed:supabase`
 5. **Authentication → Users → Add user**: crea l'utente del ristorante (email + password).
@@ -108,7 +108,7 @@ Il numero sull'icona dell'app (dove il sistema lo supporta) e sulla scheda *Rich
 | **Richieste** | tutte le richieste da confermare, raggruppate per giorno, filtri Tutte / Oggi / Prossimi giorni |
 | **Clienti** | storico per numero di telefono: prenotazioni, coperti, annullate o rifiutate, date |
 | **Menu** | categorie e piatti: foto (ridimensionate nel browser, anche scattate dal telefono), descrizione, prezzo, allergeni UE, vegetariano/vegano/senza glutine, “firma dello chef” (in home), nascondi, esaurito, ordine |
-| **Locale e orari** | avviso in cima al sito, orari con più turni, chiusure straordinarie, regole prenotazioni (coperti per orario, intervallo, preavviso), contatti, testi, recensioni |
+| **Locale e orari** | avviso in cima al sito, orari con più turni, chiusure straordinarie, regole prenotazioni (coperti per servizio, conferma automatica fino a N persone, persone massime, intervallo, preavviso), contatti, testi, recensioni |
 | **Notifiche e app** | installazione, notifiche su questo dispositivo, cosa ricevere, dispositivi collegati, notifica di prova, esci |
 | **Log errori** | solo per chi entra con un'email che inizia per `debiasi` (sviluppatore): ogni errore del sito e di Gestione — server (pagine, API, azioni, proxy), browser dei visitatori, errori gestiti (notifiche, WhatsApp, email, foto) — con percorso, dettagli e stack; filtro per tipo, errore di prova, svuota. Si cancellano da soli dopo 30 giorni (cron giornaliero). Non salva mai cookie, password o dati dei moduli |
 
@@ -149,12 +149,23 @@ Il menu pubblico `/menu` ha un solo invito a prenotare, in fondo alla pagina.
 
 ## Come funziona la prenotazione
 
-1. **Persone** → 2. **Giorno** (Oggi / Domani / calendario, giorni chiusi disattivati) → 3. **Orario** (solo quelli con posti liberi) → 4. **Nome e telefono (WhatsApp)**.
-Ogni prenotazione dal sito è una **richiesta** (“Da confermare”): il riepilogo lo dice chiaramente e indica il numero WhatsApp su cui arriverà la conferma. Stati: *da confermare* → *confermata* oppure *rifiutata*; *annullata* se annulla il cliente o lo staff. Solo “da confermare” e “confermata” occupano posti.
-Il server ricontrolla tutto: orari validi, chiusure, capienza. La funzione SQL `create_booking` blocca l'orario durante l'inserimento, così due clienti non possono prendere gli ultimi posti nello stesso istante.
+1. **Persone** → 2. **Giorno** (Oggi / Domani / calendario, giorni chiusi disattivati) → 3. **Orario** → 4. **Nome e telefono (WhatsApp)**.
+
+Le regole si impostano in *Gestione → Locale e orari* (salvate nel database):
+
+| Prenotazione dal sito | Cosa succede |
+|---|---|
+| il servizio non ha più posti per quelle persone | **rifiutata subito**: “Siamo spiacenti, siamo al completo” (gli orari di quel servizio non si possono scegliere) |
+| fino a *Conferma automatica fino a* persone | **confermata subito**: il riepilogo dice “Prenotazione confermata, ti aspettiamo”; con YCloud parte il WhatsApp di conferma; lo staff riceve “Nuova prenotazione · confermata in automatico” |
+| oltre, fino a *Persone massime per prenotazione* | **richiesta** (“Da confermare”): lo staff accetta o rifiuta |
+| oltre le persone massime | il sito invita a chiamare |
+
+**Coperti massimi per servizio**: un limite per il pranzo (orari prima delle 17:00) e uno per la cena (dalle 17:00) di ogni giorno, a qualunque ora del servizio: es. 40 = 20 tavoli da 2. Contano le prenotazioni *da confermare* e *confermate*. Le prenotazioni telefoniche inserite dallo staff non hanno limite (decide lo staff).
+Stati: *da confermare* → *confermata* oppure *rifiutata*; *annullata* se annulla il cliente o lo staff.
+Il server ricontrolla tutto: orari validi, chiusure, capienza. La funzione SQL `create_booking` blocca il servizio durante l'inserimento, così due clienti non possono prendere gli ultimi posti nello stesso istante.
 Regole per numero di telefono (scritto in qualsiasi formato: `+39 333…`, `0039…`, `333 …`): **una sola prenotazione attiva a pranzo e una a cena per giorno**, e al massimo 4 richieste in 24 ore (anti-spam, insieme al campo nascosto).
 
-**Pagina del cliente** `/prenotazione/<codice segreto>`: il link compare nel riepilogo, nel messaggio WhatsApp di conferma e torna su `/prenota` dallo stesso telefono. Il cliente vede lo stato e può **modificare** giorno, ora, persone e note (la prenotazione torna “da confermare”) o **annullare**, fino al preavviso minimo impostato in *Locale e orari*; dopo, la pagina invita a chiamare.
+**Pagina del cliente** `/prenotazione/<codice segreto>`: il link compare nel riepilogo, nel messaggio WhatsApp di conferma e torna su `/prenota` dallo stesso telefono. Il cliente vede lo stato e può **modificare** giorno, ora, persone e note (resta confermata se le persone rientrano nella conferma automatica, e riceve di nuovo la conferma su WhatsApp; altrimenti torna “da confermare”) o **annullare**, fino al preavviso minimo impostato in *Locale e orari*; dopo, la pagina invita a chiamare.
 
 ## Struttura
 
@@ -195,7 +206,7 @@ scripts/               seed Supabase, immagini dell'app (make-app-assets.ts), co
 | Domande frequenti | risposte basate sui servizi indicati su TheFork e sul funzionamento del sito |
 
 Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione, le didascalie delle foto e la frase del footer “Ti aspettiamo sotto la nostra luna.” (modificabile dall'admin).
-**Da approvare anche**: il riepilogo dopo la richiesta (“Questa è una richiesta di prenotazione, non ancora confermata…”), i testi della pagina del cliente, i 4 messaggi WhatsApp automatici (`src/lib/whatsapp/templates.ts`), il consenso WhatsApp nel modulo di prenotazione, la sezione WhatsApp dell'informativa privacy e i testi delle notifiche (`src/lib/events.ts`).
+**Da approvare anche**: il riepilogo dopo la richiesta (“Questa è una richiesta di prenotazione, non ancora confermata…”) e dopo la conferma automatica (“Prenotazione confermata… ti aspettiamo”), il messaggio “Siamo spiacenti, siamo al completo”, i testi della pagina del cliente, i 4 messaggi WhatsApp automatici (`src/lib/whatsapp/templates.ts`), il consenso WhatsApp nel modulo di prenotazione, la sezione WhatsApp dell'informativa privacy e i testi delle notifiche (`src/lib/events.ts`).
 
 ## Design
 

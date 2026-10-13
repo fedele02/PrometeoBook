@@ -110,8 +110,8 @@ export function supabaseRepo(): Repo {
       return out;
     },
     async createBooking(b, maxCovers) {
-      // The SQL function locks the (date, time) slot so two guests can't
-      // grab the last seats at the same moment.
+      // The SQL function locks the service (date + lunch/dinner) so two guests
+      // can't grab the last seats at the same moment.
       const res = await db.rpc("create_booking", { p: b, max_covers: maxCovers });
       if (res.error) {
         if (res.error.message.includes("SLOT_FULL")) throw new SlotFullError();
@@ -119,9 +119,9 @@ export function supabaseRepo(): Repo {
       }
       return res.data as Booking;
     },
-    async changeBooking(id, change, maxCovers) {
-      // same slot lock as create_booking, ignoring the booking's own seats
-      const res = await db.rpc("change_booking", { p_id: id, p: change, max_covers: maxCovers });
+    async changeBooking(id, change, status, maxCovers) {
+      // same service lock as create_booking, ignoring the booking's own seats
+      const res = await db.rpc("change_booking", { p_id: id, p: { ...change, status }, max_covers: maxCovers });
       if (res.error) {
         if (res.error.message.includes("SLOT_FULL")) throw new SlotFullError();
         throw new Error(res.error.message);
