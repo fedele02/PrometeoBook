@@ -64,6 +64,8 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 7. In Supabase → Authentication → **URL Configuration** imposta *Site URL* al dominio definitivo.
 8. Solo ora scarica e stampa il **QR del menu** da Gestione → Menu (punta a `NEXT_PUBLIC_SITE_URL/qr`).
 
+**Regione**: `vercel.json` fa girare il server a Francoforte (`fra1`), vicino al database Supabase (EU): ogni lettura dal database impiega pochi millisecondi invece di attraversare l'oceano. Se il progetto Supabase fosse in un'altra regione, cambia `regions` di conseguenza.
+
 Ogni `git push` su `main` pubblica automaticamente una nuova versione. Le pagine pubbliche sono statiche e si rigenerano da sole quando l'admin salva una modifica.
 
 ### Supabase sempre attivo (cron di Vercel)

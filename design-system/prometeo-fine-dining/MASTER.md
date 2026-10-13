@@ -68,6 +68,7 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
 - **Shell**: phone top bar (logo + PROMETEO wordmark, bell → *Notifiche e app*) and 5 bottom tabs
   (Prenotazioni · Richieste · Clienti · Menu · Locale), equal columns, active tab = gold pill behind the icon,
   ember counter on *Richieste*. Safe areas on all four sides (`env(safe-area-inset-*)`). Desktop: sidebar.
+- **Tab change**: instant — `(panel)/loading.tsx` shows pulsing `white/6` placeholders (title, subtitle, three cards; pulse only with motion allowed) while the page loads.
 - **Section labels**: Hanken 700, 11 px, uppercase, tracking .22em, gold (ember for “da confermare”).
 - **Day strip**: only days with bookings, 56×76 chips radius 12, selected = gold fill; ember badge = requests; “Altri” opens the date picker.
 - **Covers card**: big number 40 px, “in attesa” on the right; bars per bookable time, track = max covers per time, ember from 80 %.

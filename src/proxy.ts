@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { SUPABASE_PUBLIC_KEY, SUPABASE_URL, isSupabaseEnabled } from "@/lib/supabase/env";
 
-/** Keeps the Supabase admin session fresh. The public site never runs through here. */
+/**
+ * Keeps the Supabase admin session fresh. The public site never runs through here.
+ * getClaims() checks the login locally (the project signs with an asymmetric key)
+ * and only calls Supabase when the session has to be renewed.
+ */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   if (!isSupabaseEnabled()) return response;
@@ -17,7 +21,7 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await supabase.auth.getUser();
+  await supabase.auth.getClaims();
   return response;
 }
 

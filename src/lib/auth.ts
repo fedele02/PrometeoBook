@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -31,17 +32,19 @@ const safeEqual = (a: string, b: string) => {
 
 // ---------- API ---------------------------------------------------------
 
-export async function getAdmin(): Promise<Admin | null> {
+/**
+ * The signed-in admin, or null. Once per request (layout and page share it).
+ * getClaims() verifies the login token locally, no round trip to Supabase Auth;
+ * the admins table is still checked every time, so removing a row locks out at once.
+ */
+export const getAdmin = cache(async (): Promise<Admin | null> => {
   if (isSupabaseEnabled()) {
     const supabase = await createSessionClient();
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return null;
-    const { data: row } = await createAdminClient()
-      .from("admins")
-      .select("user_id")
-      .eq("user_id", data.user.id)
-      .maybeSingle();
-    return row ? { email: data.user.email ?? "" } : null;
+    const { data } = await supabase.auth.getClaims();
+    const userId = data?.claims.sub;
+    if (!userId) return null;
+    const { data: row } = await createAdminClient().from("admins").select("user_id").eq("user_id", userId).maybeSingle();
+    return row ? { email: String(data.claims.email ?? "") } : null;
   }
 
   const raw = (await cookies()).get(LOCAL_COOKIE)?.value;
@@ -49,7 +52,7 @@ export async function getAdmin(): Promise<Admin | null> {
   const [exp, sig] = raw.split(".");
   if (!exp || !sig || Number(exp) < Date.now() || !safeEqual(sig, sign(exp))) return null;
   return { email: "admin" };
-}
+});
 
 export async function requireAdmin(): Promise<Admin> {
   const admin = await getAdmin();

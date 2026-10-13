@@ -228,9 +228,9 @@
     "semantic_hash": "a899545f2ad222bf3e685324eb0cf4cb"
   },
   "src/lib/auth.ts": {
-    "mtime": 1791890636.1875265,
-    "seen": 1791890944.888268,
-    "ast_hash": "2a3448645721f5703485041f2db9ae77",
+    "mtime": 1791892308.7878306,
+    "seen": 1791892420.7724614,
+    "ast_hash": "76a4ee51215bcfbba0b588c5bc085a04",
     "semantic_hash": ""
   },
   "src/lib/catalog.ts": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "src/proxy.ts": {
-    "mtime": 1791878962.9016492,
-    "seen": 1791889046.3208337,
-    "ast_hash": "a27ddd86e2f7441771bf4f773c97536f",
+    "mtime": 1791892300.3600047,
+    "seen": 1791892420.7724614,
+    "ast_hash": "b6d5245fc0e0ad1ba30ddd432ab6c670",
     "semantic_hash": ""
   },
   "supabase/schema.sql": {
@@ -324,15 +324,15 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1791890937.0216303,
-    "seen": 1791890944.888268,
-    "ast_hash": "45c43849102a5e3479d77609b9fb42b0",
+    "mtime": 1791892411.5964005,
+    "seen": 1791892420.7724614,
+    "ast_hash": "b0c3301ddcafa420801969fea893d92f",
     "semantic_hash": ""
   },
   "design-system/prometeo-fine-dining/MASTER.md": {
-    "mtime": 1791890937.027637,
-    "seen": 1791890944.888268,
-    "ast_hash": "c5096349d1b68820537d130d9c37143b",
+    "mtime": 1791892411.5973976,
+    "seen": 1791892420.7724614,
+    "ast_hash": "0cc0e0db8ae4dad6daede7ceddb05102",
     "semantic_hash": ""
   },
   "scripts/make-app-assets.ts": {
@@ -576,9 +576,9 @@
     "semantic_hash": ""
   },
   "vercel.json": {
-    "mtime": 1791889621.5582783,
-    "seen": 1791889717.3678777,
-    "ast_hash": "3b3315d893595c865dff6275584e5fd0",
+    "mtime": 1791892300.3590028,
+    "seen": 1791892420.7724614,
+    "ast_hash": "e21b166d518de3a0edd39f8635a5eba0",
     "semantic_hash": ""
   },
   "src/app/api/log-error/route.ts": {
@@ -621,6 +621,12 @@
     "mtime": 1791890609.5465543,
     "seen": 1791890944.888268,
     "ast_hash": "279dc4327b41de5a6be36942455b503a",
+    "semantic_hash": ""
+  },
+  "src/app/gestore-prometeo-2026/(panel)/loading.tsx": {
+    "mtime": 1791892317.4666774,
+    "seen": 1791892420.7724614,
+    "ast_hash": "4c06a1e4a35f0a8edd68e43607bcaa49",
     "semantic_hash": ""
   }
 }
