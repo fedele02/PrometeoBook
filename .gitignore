@@ -54,3 +54,8 @@ __pycache__/
 /graphify-out/.graphify_root
 # Claude Code hooks written by graphify contain absolute paths of this PC
 /.claude/settings.json
+
+# graphify: automatic dated backups and local interpreter paths (machine-specific)
+graphify-out/20[0-9][0-9]-*/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
