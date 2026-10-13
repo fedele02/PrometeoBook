@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+      // dish photos uploaded before the switch to Supabase Storage are still on Cloudinary
+      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+    ],
   },
   async headers() {
     return [

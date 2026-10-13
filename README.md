@@ -37,6 +37,8 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 ## Pubblicare su Vercel
 
 > Prima Supabase, poi Vercel: online i dati **devono** stare su Supabase (su Vercel i file non si possono scrivere, la modalità demo locale non funziona).
+>
+> **Il sito mostra il menu di esempio e in Gestione ogni salvataggio dà errore?** Mancano su Vercel le variabili di Supabase (punto 4): aggiungile e fai **Redeploy**.
 
 1. Completa **Collegare Supabase** (sopra), compreso `npm run seed:supabase` e l'utente admin.
 2. Su [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → `fedele02/PrometeoBook` (collega l'account GitHub se richiesto).
