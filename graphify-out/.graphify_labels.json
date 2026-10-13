@@ -1,1 +1,19 @@
-{"0": "Prenotazioni e timeline staff", "1": "Sito pubblico e layout", "2": "App Gestione: navigazione e PWA", "3": "Azioni admin, menu e impostazioni", "4": "WhatsApp automatico (YCloud)", "5": "Documentazione e design system", "6": "Prenotazione cliente e pagina privata", "7": "Dipendenze e strumenti", "8": "Modello dati e notifiche push", "9": "Accesso e autenticazione", "10": "Configurazione TypeScript", "11": "Schema database", "12": "Icona app Gestione", "13": "Migrazione app Gestione", "14": "Migrazione WhatsApp", "15": "Configurazione PostCSS"}
+{
+  "0": "BookingsBoard.tsx",
+  "1": "next",
+  "2": "Icons.tsx",
+  "3": "gestore-prometeo-2026/actions.ts",
+  "4": "index.ts",
+  "5": "README - Prometeo Fine Dining sito web",
+  "6": "BookingWizard.tsx",
+  "7": "package.json",
+  "8": "types.ts",
+  "9": "auth.ts",
+  "10": "compilerOptions",
+  "11": "schema.sql",
+  "12": "Prometeo Gestione Staff Web App",
+  "13": "2026-10-13_app-gestione.sql",
+  "14": "public.whatsapp_messages",
+  "15": "postcss.config.mjs",
+  "16": "vercel.json"
+}
