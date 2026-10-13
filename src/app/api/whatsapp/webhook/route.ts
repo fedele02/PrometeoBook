@@ -1,4 +1,5 @@
 import { handleWebhookEvent, isWebhookConfigured, verifySignature } from "@/lib/whatsapp";
+import { logError } from "@/lib/errors";
 
 /**
  * YCloud webhook: delivery status of the WhatsApp messages sent to guests
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     await handleWebhookEvent(event as Parameters<typeof handleWebhookEvent>[0]);
   } catch (e) {
     // a non-2xx answer makes YCloud retry later
-    console.error("whatsapp webhook failed", e);
+    await logError("Webhook WhatsApp non elaborato", e);
     return Response.json({ error: "temporary failure" }, { status: 500 });
   }
   return Response.json({ ok: true });

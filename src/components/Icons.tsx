@@ -199,3 +199,11 @@ export const IconNote = (p: P) => (
     <path d="M14 20v-5h5" />
   </svg>
 );
+/** error log (Gestione → Log errori) */
+export const IconBug = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M8.5 8.5a3.5 3.5 0 0 1 7 0" />
+    <rect x="7" y="8.5" width="10" height="11" rx="5" />
+    <path d="M12 12v7.5M3.5 13H7M17 13h3.5M4.5 8.5 7 10M19.5 8.5 17 10M4.5 18.5 7.2 16.5M19.5 18.5l-2.7-2" />
+  </svg>
+);

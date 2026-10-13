@@ -174,3 +174,22 @@ export type PushDevice = {
   created_at: string;
   last_used_at: string;
 };
+
+/**
+ * Where an error happened: Next.js server (page render, API route, admin action,
+ * proxy), the visitor's browser, or an error the app caught and handled itself.
+ */
+export type ErrorSource = "render" | "route" | "action" | "proxy" | "browser" | "handled";
+
+/** One entry of the error log (Gestione → Log errori). */
+export type ErrorLog = {
+  id: string;
+  created_at: string;
+  source: ErrorSource;
+  message: string;
+  stack: string;
+  /** page or API path, e.g. /prenota */
+  path: string;
+  /** extra details: route, method, browser, what the app was doing… */
+  context: Record<string, unknown>;
+};

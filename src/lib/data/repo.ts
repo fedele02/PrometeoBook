@@ -1,4 +1,4 @@
-import type { Booking, BookingChange, BookingStatus, Category, Dish, MenuData, NewBooking, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
+import type { Booking, BookingChange, BookingStatus, Category, Dish, ErrorLog, MenuData, NewBooking, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
 
 export class SlotFullError extends Error {
   constructor() {
@@ -56,6 +56,12 @@ export interface Repo {
     patch: { status: WhatsappStatus; error?: string | null; provider_id?: string | null },
   ): Promise<WhatsappMessage | null>;
   listWhatsappMessages(bookingIds: string[]): Promise<WhatsappMessage[]>;
+
+  /** error log (Gestione → Log errori), newest first */
+  saveErrorLog(e: ErrorLog): Promise<void>;
+  listErrorLogs(limit: number): Promise<ErrorLog[]>;
+  /** removes the entries older than the date, or all of them without one */
+  clearErrorLogs(beforeIso?: string): Promise<void>;
 
   /** stores an image and returns its public URL */
   uploadImage(bytes: ArrayBuffer, contentType: string, ext: string): Promise<string>;

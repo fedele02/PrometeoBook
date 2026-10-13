@@ -23,7 +23,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 
 1. Crea un progetto su [supabase.com](https://supabase.com) (regione **EU – Frankfurt**, per il GDPR).
 2. **SQL Editor** → incolla ed esegui tutto `supabase/schema.sql` (tabelle, sicurezza RLS, funzioni di prenotazione e modifica atomiche, dispositivi per le notifiche, bucket foto `media`).
-   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`). Si possono rilanciare senza danni.
+   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`), poi `2026-10-15_error-logs.sql` (tabella `error_logs`, Log errori). Si possono rilanciare senza danni.
 3. **Project Settings → API Keys**: copia URL, *publishable key* e *secret key* in `.env.local` (vedi `.env.example`).
 4. Carica menu e impostazioni iniziali: `npm run seed:supabase`
 5. **Authentication → Users → Add user**: crea l'utente del ristorante (email + password).
@@ -32,6 +32,8 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
    insert into public.admins (user_id)
    select id from auth.users where email = 'email-del-ristorante@esempio.it';
    ```
+   Senza questa riga il login risponde “Questo account non è abilitato all'area riservata”. Per abilitare in un colpo tutti gli utenti creati: `insert into public.admins (user_id) select id from auth.users on conflict do nothing;`
+   **Sessione**: chi entra resta collegato (cookie di 400 giorni, rinnovato a ogni apertura dell'app; Supabase non fa scadere le sessioni se non si attivano i limiti di sessione del piano Pro). Le notifiche arrivano al dispositivo anche se si esce.
 6. **Authentication → Sign In / Providers**: disattiva *Allow new users to sign up* (gli admin si creano solo a mano).
 
 ## Pubblicare su Vercel
@@ -106,6 +108,7 @@ Il numero sull'icona dell'app (dove il sistema lo supporta) e sulla scheda *Rich
 | **Menu** | categorie e piatti: foto (ridimensionate nel browser, anche scattate dal telefono), descrizione, prezzo, allergeni UE, vegetariano/vegano/senza glutine, “firma dello chef” (in home), nascondi, esaurito, ordine |
 | **Locale e orari** | avviso in cima al sito, orari con più turni, chiusure straordinarie, regole prenotazioni (coperti per orario, intervallo, preavviso), contatti, testi, recensioni |
 | **Notifiche e app** | installazione, notifiche su questo dispositivo, cosa ricevere, dispositivi collegati, notifica di prova, esci |
+| **Log errori** | solo per chi entra con un'email che inizia per `debiasi` (sviluppatore): ogni errore del sito e di Gestione — server (pagine, API, azioni, proxy), browser dei visitatori, errori gestiti (notifiche, WhatsApp, email, foto) — con percorso, dettagli e stack; filtro per tipo, errore di prova, svuota. Si cancellano da soli dopo 30 giorni (cron giornaliero). Non salva mai cookie, password o dati dei moduli |
 
 **Accetta / Rifiuta.** Lo staff non modifica le prenotazioni (lo fa solo il cliente): risponde. Con YCloud collegato il messaggio al cliente parte da solo (vedi *Messaggi WhatsApp automatici*); altrimenti *Accetta* apre WhatsApp con la conferma già scritta (con il link per modificare o annullare) e *Rifiuta* apre la card con il motivo (completo, chiuso, gruppo troppo numeroso, testo libero) e il messaggio, poi WhatsApp.
 
@@ -165,6 +168,8 @@ src/lib/events.ts      cosa succede a una prenotazione → testo della notifica 
 src/lib/messages.ts    valori e testo dei messaggi WhatsApp (uguale per invio automatico e a mano)
 src/lib/whatsapp/      modelli Meta (templates.ts), client YCloud, invio e webhook
 src/app/api/whatsapp/  webhook YCloud (stato dei messaggi)
+src/app/api/cron/      cron di Vercel: Supabase sempre attivo + pulizia del log errori
+src/lib/errors.ts      log errori: src/instrumentation.ts (server), src/instrumentation-client.ts → /api/log-error (browser), logError() (errori gestiti)
 src/lib/pwa.ts         percorso, nome e immagini dell'app Gestione
 supabase/schema.sql    database (nuova installazione) · supabase/migrations/ per i database esistenti
 design/app-icon/       icona dell'app esportata da Penpot

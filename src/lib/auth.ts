@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isSupabaseEnabled } from "./supabase/env";
 import { createSessionClient } from "./supabase/server";
 import { createAdminClient } from "./supabase/admin";
@@ -54,6 +54,16 @@ export async function getAdmin(): Promise<Admin | null> {
 export async function requireAdmin(): Promise<Admin> {
   const admin = await getAdmin();
   if (!admin) redirect("/gestore-prometeo-2026/login");
+  return admin;
+}
+
+/** Only the developer sees the error log: an admin whose e-mail starts with "debiasi". */
+export const canSeeErrors = (admin: Admin) => admin.email.toLowerCase().startsWith("debiasi");
+
+/** The developer's account, or 404 for anyone else (the page doesn't exist for them). */
+export async function requireDeveloper(): Promise<Admin> {
+  const admin = await requireAdmin();
+  if (!canSeeErrors(admin)) notFound();
   return admin;
 }
 

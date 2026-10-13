@@ -9,6 +9,7 @@ import { announce } from "@/lib/events";
 import { sendWhatsappOrAlert } from "@/lib/whatsapp";
 import { dayState, formatDateLong, isBookableDate, isValidDate, serviceLabel, slotsForDate } from "@/lib/time";
 import type { Settings } from "@/lib/types";
+import { logError } from "@/lib/errors";
 
 export type Slot = { time: string; free: boolean };
 export type Availability =
@@ -119,7 +120,7 @@ export async function submitBooking(input: BookingInput): Promise<BookingResult>
     return { ok: true, token: booking.manage_token };
   } catch (e) {
     if (e instanceof SlotFullError) return { ok: false, error: SLOT_TAKEN, field: "time", slotFull: true };
-    console.error(e);
+    await logError("Prenotazione dal sito non salvata", e, { date: b.date, time: b.time, people: b.people });
     return { ok: false, error: "Si è verificato un problema. Riprova o chiamaci." };
   }
 }
@@ -159,7 +160,7 @@ export async function changeMyBooking(token: string, input: z.input<typeof chang
     return { ok: true };
   } catch (e) {
     if (e instanceof SlotFullError) return { ok: false, error: SLOT_TAKEN, field: "time", slotFull: true };
-    console.error(e);
+    await logError("Modifica del cliente non salvata", e, { booking: b.id });
     return { ok: false, error: "Si è verificato un problema. Riprova o chiamaci." };
   }
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/gestore-prometeo-2026/actions";
 import { ADMIN_PATH } from "@/lib/pwa";
-import { IconBell, IconCalendar, IconHome, IconInbox, IconLogout, IconMenu, IconStore, IconUser } from "../Icons";
+import { IconBell, IconBug, IconCalendar, IconHome, IconInbox, IconLogout, IconMenu, IconStore, IconUser } from "../Icons";
 import { Emblem, Wordmark } from "../Logo";
 
 const ITEMS = [
@@ -28,10 +28,11 @@ function Count({ n, className = "" }: { n: number; className?: string }) {
   );
 }
 
-export function AdminNav({ email, pending }: { email: string; pending: number }) {
+export function AdminNav({ email, pending, showErrors }: { email: string; pending: number; showErrors: boolean }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === ADMIN_PATH ? pathname === ADMIN_PATH : pathname.startsWith(href));
   const notifyActive = pathname.startsWith(`${ADMIN_PATH}/notifiche`);
+  const errorsActive = pathname.startsWith(`${ADMIN_PATH}/errori`);
 
   return (
     <>
@@ -71,6 +72,17 @@ export function AdminNav({ email, pending }: { email: string; pending: number })
           >
             <IconBell className="h-5 w-5" /> Notifiche e app
           </Link>
+          {showErrors && (
+            <Link
+              href={`${ADMIN_PATH}/errori`}
+              aria-current={errorsActive ? "page" : undefined}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 font-semibold transition-colors ${
+                errorsActive ? "bg-gold/15 text-gold-light" : "text-cream/70 hover:bg-white/5 hover:text-cream"
+              }`}
+            >
+              <IconBug className="h-5 w-5" /> Log errori
+            </Link>
+          )}
           <Link href="/" target="_blank" className="flex items-center gap-3 rounded-xl px-3 py-3 font-semibold text-cream/70 transition-colors hover:bg-white/5 hover:text-cream">
             <IconHome className="h-5 w-5" /> Vedi il sito
           </Link>
@@ -92,14 +104,26 @@ export function AdminNav({ email, pending }: { email: string; pending: number })
             <Emblem className="h-7 w-auto" />
             <Wordmark className="h-3 w-auto" />
           </Link>
-          <Link
-            href={`${ADMIN_PATH}/notifiche`}
-            aria-label="Notifiche e app"
-            aria-current={notifyActive ? "page" : undefined}
-            className={`grid h-11 w-11 place-items-center rounded-full transition-colors ${notifyActive ? "bg-gold/15 text-gold-light" : "bg-white/[0.06] text-cream"}`}
-          >
-            <IconBell className="h-6 w-6" />
-          </Link>
+          <span className="flex gap-2">
+            {showErrors && (
+              <Link
+                href={`${ADMIN_PATH}/errori`}
+                aria-label="Log errori"
+                aria-current={errorsActive ? "page" : undefined}
+                className={`grid h-11 w-11 place-items-center rounded-full transition-colors ${errorsActive ? "bg-gold/15 text-gold-light" : "bg-white/[0.06] text-cream"}`}
+              >
+                <IconBug className="h-6 w-6" />
+              </Link>
+            )}
+            <Link
+              href={`${ADMIN_PATH}/notifiche`}
+              aria-label="Notifiche e app"
+              aria-current={notifyActive ? "page" : undefined}
+              className={`grid h-11 w-11 place-items-center rounded-full transition-colors ${notifyActive ? "bg-gold/15 text-gold-light" : "bg-white/[0.06] text-cream"}`}
+            >
+              <IconBell className="h-6 w-6" />
+            </Link>
+          </span>
         </div>
       </header>
 

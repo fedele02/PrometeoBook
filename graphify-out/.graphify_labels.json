@@ -15,5 +15,15 @@
   "13": "2026-10-13_app-gestione.sql",
   "14": "public.whatsapp_messages",
   "15": "postcss.config.mjs",
-  "16": "vercel.json"
+  "16": "vercel.json",
+  "17": "RequestCard.tsx",
+  "18": "time.ts",
+  "19": "prenota/actions.ts",
+  "20": "seed.ts",
+  "21": "MyBookings.tsx",
+  "22": "dependencies",
+  "23": "devDependencies",
+  "24": "scripts",
+  "25": "instrumentation-client.ts",
+  "26": "2026-10-15_error-logs.sql"
 }

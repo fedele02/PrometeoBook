@@ -48,9 +48,9 @@
     "semantic_hash": ""
   },
   "src/app/(site)/prenota/actions.ts": {
-    "mtime": 1791888025.2626166,
-    "seen": 1791889046.3208337,
-    "ast_hash": "8f17625f936ae2d61ab47d2ec4d650d2",
+    "mtime": 1791890700.2885177,
+    "seen": 1791890944.888268,
+    "ast_hash": "ada66d38041c127c65764ba3225cc558",
     "semantic_hash": ""
   },
   "src/app/(site)/prenota/page.tsx": {
@@ -96,9 +96,9 @@
     "semantic_hash": ""
   },
   "src/components/Icons.tsx": {
-    "mtime": 1791878962.840549,
-    "seen": 1791889046.3208337,
-    "ast_hash": "1a1c16b901bfecb23b9f6218a3a43ea7",
+    "mtime": 1791890751.422768,
+    "seen": 1791890944.888268,
+    "ast_hash": "3be0444c2aec640f233808d964f8f152",
     "semantic_hash": ""
   },
   "src/components/Logo.tsx": {
@@ -108,9 +108,9 @@
     "semantic_hash": "a0bb50b40ded5d4873a3a6d9befaf181"
   },
   "src/components/admin/AdminNav.tsx": {
-    "mtime": 1791878962.8470542,
-    "seen": 1791889046.3208337,
-    "ast_hash": "2cac3f5affd7a784fc60c09f42c5cbd5",
+    "mtime": 1791890795.2697167,
+    "seen": 1791890944.888268,
+    "ast_hash": "8264c0ee884fbd42fa34821a6b6eb5de",
     "semantic_hash": ""
   },
   "src/components/admin/BookingsBoard.tsx": {
@@ -228,9 +228,9 @@
     "semantic_hash": "a899545f2ad222bf3e685324eb0cf4cb"
   },
   "src/lib/auth.ts": {
-    "mtime": 1791878962.8828368,
-    "seen": 1791889046.3208337,
-    "ast_hash": "ecea69f834856268c8e1231b0eaa0b9f",
+    "mtime": 1791890636.1875265,
+    "seen": 1791890944.888268,
+    "ast_hash": "2a3448645721f5703485041f2db9ae77",
     "semantic_hash": ""
   },
   "src/lib/catalog.ts": {
@@ -240,10 +240,10 @@
     "semantic_hash": ""
   },
   "src/lib/notify.ts": {
-    "mtime": 1791878893.4921677,
-    "seen": 1791889046.3208337,
-    "ast_hash": "a79d82745f90282825a90159760dd87e",
-    "semantic_hash": "a79d82745f90282825a90159760dd87e"
+    "mtime": 1791890700.4123254,
+    "seen": 1791890944.888268,
+    "ast_hash": "24ee4c2ddbafbf374193130a45a07c1b",
+    "semantic_hash": ""
   },
   "src/lib/schemas.ts": {
     "mtime": 1791888025.2942743,
@@ -288,9 +288,9 @@
     "semantic_hash": "1df539412e943466ec7c80e475843d52"
   },
   "src/lib/types.ts": {
-    "mtime": 1791888025.3099034,
-    "seen": 1791889046.3208337,
-    "ast_hash": "59bdf1eba01208934aba447e3b6dbbbd",
+    "mtime": 1791890590.8593311,
+    "seen": 1791890944.888268,
+    "ast_hash": "59441e3f26f45b1e63ef2f7066dc3ea9",
     "semantic_hash": ""
   },
   "src/proxy.ts": {
@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "supabase/schema.sql": {
-    "mtime": 1791888025.3099034,
-    "seen": 1791889046.3208337,
-    "ast_hash": "9c5e73d39a6a383d643f04eb6f279821",
+    "mtime": 1791890612.081996,
+    "seen": 1791890944.888268,
+    "ast_hash": "b134e6eec2744b6ef4f1b5effe6cff47",
     "semantic_hash": ""
   },
   "tsconfig.json": {
@@ -324,15 +324,15 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1791889637.0046332,
-    "seen": 1791889717.3678777,
-    "ast_hash": "f18f116dba0aa3d0b64df3218243bfc6",
+    "mtime": 1791890937.0216303,
+    "seen": 1791890944.888268,
+    "ast_hash": "45c43849102a5e3479d77609b9fb42b0",
     "semantic_hash": ""
   },
   "design-system/prometeo-fine-dining/MASTER.md": {
-    "mtime": 1791888025.2313619,
-    "seen": 1791889046.3208337,
-    "ast_hash": "15318ae2fdd966f920d0bb61e285a2e8",
+    "mtime": 1791890937.027637,
+    "seen": 1791890944.888268,
+    "ast_hash": "c5096349d1b68820537d130d9c37143b",
     "semantic_hash": ""
   },
   "scripts/make-app-assets.ts": {
@@ -354,9 +354,9 @@
     "semantic_hash": ""
   },
   "src/app/api/whatsapp/webhook/route.ts": {
-    "mtime": 1791888025.2626166,
-    "seen": 1791889046.3208337,
-    "ast_hash": "691ce406497b27b37440e4c6e770b6c9",
+    "mtime": 1791890700.6123638,
+    "seen": 1791890944.888268,
+    "ast_hash": "7c6db5097d1b5e7ee0d3ba5380481de9",
     "semantic_hash": ""
   },
   "src/app/gestore-prometeo-2026/(panel)/clienti/page.tsx": {
@@ -366,9 +366,9 @@
     "semantic_hash": ""
   },
   "src/app/gestore-prometeo-2026/(panel)/layout.tsx": {
-    "mtime": 1791878962.7800786,
-    "seen": 1791889046.3208337,
-    "ast_hash": "c1e6129a767e95d71562e20eae56770d",
+    "mtime": 1791890795.2687178,
+    "seen": 1791890944.888268,
+    "ast_hash": "39673daf42b45ca79940084a3ef6fc9b",
     "semantic_hash": ""
   },
   "src/app/gestore-prometeo-2026/(panel)/locale/page.tsx": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "src/app/gestore-prometeo-2026/actions.ts": {
-    "mtime": 1791888025.27824,
-    "seen": 1791889046.3208337,
-    "ast_hash": "ce878fe3983538581a79e98e66d94217",
+    "mtime": 1791890744.387997,
+    "seen": 1791890944.888268,
+    "ast_hash": "9f1247056ec3e73a33d83de268b9b798",
     "semantic_hash": ""
   },
   "src/app/gestore-prometeo-2026/layout.tsx": {
@@ -492,9 +492,9 @@
     "semantic_hash": ""
   },
   "src/lib/events.ts": {
-    "mtime": 1791878962.8898375,
-    "seen": 1791889046.3208337,
-    "ast_hash": "df6d2ea50974f181eabc2091a0ad5cc0",
+    "mtime": 1791890700.3388598,
+    "seen": 1791890944.888268,
+    "ast_hash": "3cfbdec6ad18114e9c737f62bd57bf8a",
     "semantic_hash": ""
   },
   "src/lib/guest-bookings.ts": {
@@ -510,9 +510,9 @@
     "semantic_hash": ""
   },
   "src/lib/push.ts": {
-    "mtime": 1791878962.8928351,
-    "seen": 1791889046.3208337,
-    "ast_hash": "3db34f4862232a09dccee2becf76e481",
+    "mtime": 1791890700.4794483,
+    "seen": 1791890944.888268,
+    "ast_hash": "62e18cd714b31ce7aac389db94bbf842",
     "semantic_hash": ""
   },
   "src/lib/pwa.ts": {
@@ -522,9 +522,9 @@
     "semantic_hash": ""
   },
   "src/lib/whatsapp/index.ts": {
-    "mtime": 1791888025.3099034,
-    "seen": 1791889046.3208337,
-    "ast_hash": "33ac9cfdd8370b0d6e7b6c7fc180401b",
+    "mtime": 1791890707.4491706,
+    "seen": 1791890944.888268,
+    "ast_hash": "c36de0ae07b2fb644b8d408407e9823f",
     "semantic_hash": ""
   },
   "src/lib/whatsapp/templates.ts": {
@@ -570,15 +570,57 @@
     "semantic_hash": ""
   },
   "src/app/api/cron/keepalive/route.ts": {
-    "mtime": 1791889621.4739907,
-    "seen": 1791889717.3678777,
-    "ast_hash": "22eaffe4133d490d0aa210f26d6105ef",
+    "mtime": 1791890717.352052,
+    "seen": 1791890944.888268,
+    "ast_hash": "5fbd6e4a3117d511f7dedee3f50b40ea",
     "semantic_hash": ""
   },
   "vercel.json": {
     "mtime": 1791889621.5582783,
     "seen": 1791889717.3678777,
     "ast_hash": "3b3315d893595c865dff6275584e5fd0",
+    "semantic_hash": ""
+  },
+  "src/app/api/log-error/route.ts": {
+    "mtime": 1791890659.296221,
+    "seen": 1791890944.888268,
+    "ast_hash": "e47b58a87d485d95bc871a23cc40c988",
+    "semantic_hash": ""
+  },
+  "src/app/gestore-prometeo-2026/(panel)/errori/page.tsx": {
+    "mtime": 1791890779.1973925,
+    "seen": 1791890944.888268,
+    "ast_hash": "438d838fdb779dd5da10b576affb81f5",
+    "semantic_hash": ""
+  },
+  "src/components/admin/ErrorLogTools.tsx": {
+    "mtime": 1791890779.3968124,
+    "seen": 1791890944.888268,
+    "ast_hash": "7b052f438797793abb4e08f9eef891c5",
+    "semantic_hash": ""
+  },
+  "src/instrumentation-client.ts": {
+    "mtime": 1791890659.1872053,
+    "seen": 1791890944.888268,
+    "ast_hash": "fba575c1e6d1d30b30dfe2d23f8f2b65",
+    "semantic_hash": ""
+  },
+  "src/instrumentation.ts": {
+    "mtime": 1791890643.7187936,
+    "seen": 1791890944.888268,
+    "ast_hash": "dae37360595739089058bfb00e10161c",
+    "semantic_hash": ""
+  },
+  "src/lib/errors.ts": {
+    "mtime": 1791890625.606354,
+    "seen": 1791890944.888268,
+    "ast_hash": "833d063ec00aa7a60549e66f02f85ce8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/2026-10-15_error-logs.sql": {
+    "mtime": 1791890609.5465543,
+    "seen": 1791890944.888268,
+    "ast_hash": "279dc4327b41de5a6be36942455b503a",
     "semantic_hash": ""
   }
 }

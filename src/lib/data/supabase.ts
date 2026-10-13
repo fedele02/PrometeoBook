@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { seedSettings } from "../seed";
-import type { Booking, Category, Dish, PushDevice, Settings, WhatsappMessage } from "../types";
+import type { Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
 import { createAdminClient } from "../supabase/admin";
 import { SlotFullError, type Repo } from "./repo";
 
@@ -180,6 +180,17 @@ export function supabaseRepo(): Repo {
         out.push(...(check(res) as WhatsappMessage[]));
       }
       return out;
+    },
+
+    async saveErrorLog(e) {
+      check(await db.from("error_logs").insert(e));
+    },
+    async listErrorLogs(limit) {
+      return check(await db.from("error_logs").select("*").order("created_at", { ascending: false }).limit(limit)) as ErrorLog[];
+    },
+    async clearErrorLogs(beforeIso) {
+      // delete needs a filter: "older than" or, to empty the log, every row
+      check(await db.from("error_logs").delete().lt("created_at", beforeIso ?? "9999-12-31"));
     },
 
     async uploadImage(bytes, contentType, ext) {

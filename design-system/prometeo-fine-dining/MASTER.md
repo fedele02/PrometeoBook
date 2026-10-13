@@ -80,6 +80,11 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
   “WhatsApp non inviato” + gold “Invia a mano” (prefilled) and “Fatto”. In the timeline the open row lists the messages
   with status (in invio · inviato ✓ · consegnato ✓✓ · letto ✓✓ in `ok` · non inviato in `ember` + “Invia a mano”);
   a closed row shows an ember “WhatsApp non inviato” chip.
+- **Log errori** (developer only, e-mail starting with “debiasi”): bug icon — desktop sidebar under *Notifiche e app*,
+  phone top bar as a second round 44 px button left of the bell (never a sixth bottom tab). Entries are `<details>` cards
+  (radius 8, gold border when open): source pill (server errors `ember/20`, browser `gold/15`, handled `white/8`), time,
+  path in mono 12 px, message in 600; open = hint, key/value details in mono, stack in a scrolling `black/30` block.
+  Filter chips by source; “Errore di prova” and “Svuota” (asks Sì/No in place) as line buttons.
 - **Notifications**: no buttons, title “Evento · Nome”, body with guests/day/time; past visits never appear in notifications, only in the app.
 - **App icon**: logo + “GESTIONE” in Cinzel on ink, full bleed (iOS/Android apply their own mask); maskable variant inside the 80 % safe zone;
   monochrome badge for the Android status bar; black launch screens for iPhone. Source: Penpot export in `design/app-icon/`.

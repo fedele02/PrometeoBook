@@ -1,6 +1,7 @@
 import "server-only";
 import type { Booking } from "./types";
 import { formatDateLong } from "./time";
+import { logError } from "./errors";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
@@ -34,6 +35,6 @@ export async function notifyNewBooking(b: Booking) {
       }),
     });
   } catch (e) {
-    console.error("booking notification failed", e);
+    await logError("Email della prenotazione non inviata", e, { booking: b.id });
   }
 }

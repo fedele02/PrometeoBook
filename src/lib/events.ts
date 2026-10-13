@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { repo } from "./data";
 import { notifyNewBooking } from "./notify";
+import { logError } from "./errors";
 import { ADMIN_PATH } from "./pwa";
 import { DEVICE_COOKIE, pushToDevices, type PushPayload } from "./push";
 import { addDays, dateParts, romeNow, serviceLabel } from "./time";
@@ -94,6 +95,6 @@ export async function announce(e: BookingEvent) {
       e.type === "requested" ? notifyNewBooking(e.booking) : null,
     ]);
   } catch (err) {
-    console.error("announce failed", err);
+    await logError("Notifica allo staff non inviata", err, { event: e.type, booking: e.booking.id });
   }
 }

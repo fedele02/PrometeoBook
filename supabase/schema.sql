@@ -81,6 +81,17 @@ create index if not exists whatsapp_messages_booking_idx on public.whatsapp_mess
 create index if not exists whatsapp_messages_provider_idx on public.whatsapp_messages (provider_id);
 
 -- Users allowed into the staff area (add rows after creating the user in Auth).
+create table if not exists public.error_logs (
+  id         uuid primary key,
+  created_at timestamptz not null default now(),
+  source     text not null check (source in ('render','route','action','proxy','browser','handled')),
+  message    text not null default '',
+  stack      text not null default '',
+  path       text not null default '',
+  context    jsonb not null default '{}'::jsonb
+);
+create index if not exists error_logs_created_idx on public.error_logs (created_at desc);
+
 create table if not exists public.admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
@@ -97,6 +108,7 @@ alter table public.bookings   enable row level security;
 alter table public.admins     enable row level security;
 alter table public.push_devices enable row level security;
 alter table public.whatsapp_messages enable row level security;
+alter table public.error_logs enable row level security;
 
 drop policy if exists "public read settings" on public.settings;
 create policy "public read settings" on public.settings for select using (true);
@@ -110,7 +122,7 @@ create policy "public read dishes" on public.dishes for select using (visible);
 drop policy if exists "admin reads own row" on public.admins;
 create policy "admin reads own row" on public.admins for select to authenticated using (user_id = auth.uid());
 
--- bookings, push_devices, whatsapp_messages: no policies → nobody but the server (secret key) can touch them.
+-- bookings, push_devices, whatsapp_messages, error_logs: no policies → nobody but the server (secret key) can touch them.
 
 -- ---------- atomic booking -------------------------------------------
 

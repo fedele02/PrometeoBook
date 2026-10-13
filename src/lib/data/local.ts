@@ -4,10 +4,10 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { seedCategories, seedDishes, seedSettings } from "../seed";
 import { isActive } from "../customers";
-import type { Booking, Category, Dish, PushDevice, Settings, WhatsappMessage } from "../types";
+import type { Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
 import { SlotFullError, type Repo } from "./repo";
 
-type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[]; whatsapp: WhatsappMessage[] };
+type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[]; whatsapp: WhatsappMessage[]; errors: ErrorLog[] };
 
 const DB_FILE = path.join(process.cwd(), "data", "local-db.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
@@ -27,6 +27,7 @@ async function read(): Promise<Db> {
     db.settings = { ...seedSettings, ...db.settings, booking: { ...seedSettings.booking, ...db.settings.booking } };
     db.devices ??= [];
     db.whatsapp ??= [];
+    db.errors ??= [];
     // bookings saved before guests could manage them get their private link
     for (const b of db.bookings) b.manage_token ??= randomUUID();
     return db;
@@ -38,6 +39,7 @@ async function read(): Promise<Db> {
       bookings: [],
       devices: [],
       whatsapp: [],
+      errors: [],
     };
   }
 }
@@ -176,6 +178,14 @@ export const localRepo: Repo = {
     const ids = new Set(bookingIds);
     return (await read()).whatsapp.filter((m) => ids.has(m.booking_id)).sort((a, b) => a.created_at.localeCompare(b.created_at));
   },
+
+  saveErrorLog: (e) =>
+    mutate((db) => {
+      // the JSON file must stay small: keep the latest 500
+      db.errors = [e, ...db.errors].slice(0, 500);
+    }),
+  listErrorLogs: async (limit) => (await read()).errors.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit),
+  clearErrorLogs: (beforeIso) => mutate((db) => void (db.errors = beforeIso ? db.errors.filter((e) => e.created_at >= beforeIso) : [])),
 
   async uploadImage(bytes, _type, ext) {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });

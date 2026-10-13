@@ -2,6 +2,7 @@ import "server-only";
 import webpush from "web-push";
 import type { NotifyPrefs, PushDevice } from "./types";
 import { repo } from "./data";
+import { logError } from "./errors";
 
 /** Push needs the VAPID keys (see .env.example); without them it simply stays off. */
 export const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
@@ -66,13 +67,13 @@ export async function pushToDevices(
         } catch (e) {
           const status = (e as { statusCode?: number }).statusCode;
           if (status === 404 || status === 410) await r.deleteDevice(d.id).catch(() => {});
-          else console.error("push failed", d.label, status ?? e);
+          else await logError(`Notifica push non consegnata a ${d.label || "un dispositivo"}`, e, { status });
         }
       }),
     );
     return { sent };
   } catch (e) {
-    console.error("push error", e);
+    await logError("Notifiche push non inviate", e);
     return { sent: 0 };
   }
 }

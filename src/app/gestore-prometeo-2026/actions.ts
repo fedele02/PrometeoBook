@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
-import { login, logout, requireAdmin } from "@/lib/auth";
+import { login, logout, requireAdmin, requireDeveloper } from "@/lib/auth";
 import { CONTENT_TAG, repo } from "@/lib/data";
 import { announce, pendingCount } from "@/lib/events";
 import { DEFAULT_PREFS, DEVICE_COOKIE, pushToDevices } from "@/lib/push";
@@ -15,6 +15,7 @@ import { adminBookingSchema, categorySchema, dishSchema, firstError, settingsSch
 import type { DeclineReason } from "@/lib/messages";
 import type { Category, Dish, NotifyPrefs, PushDevice, Settings, WhatsappKind } from "@/lib/types";
 import { sendBookingWhatsapp, type WhatsappOutcome } from "@/lib/whatsapp";
+import { logError } from "@/lib/errors";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -30,7 +31,7 @@ async function guarded(fn: () => Promise<void>): Promise<ActionResult> {
     await fn();
     return { ok: true };
   } catch (e) {
-    console.error(e);
+    await logError("Salvataggio in Gestione non riuscito", e);
     return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
   }
 }
@@ -75,7 +76,7 @@ async function answer(id: string, status: keyof typeof KIND_OF, reason?: Decline
     const whatsapp = await sendBookingWhatsapp(kind, booking, s, { reason });
     return { ok: true, whatsapp };
   } catch (e) {
-    console.error(e);
+    await logError(`Risposta alla prenotazione (${status}) non salvata`, e, { booking: id });
     return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
   }
 }
@@ -109,7 +110,7 @@ export async function createBookingAction(input: unknown): Promise<AnswerResult>
     const whatsapp = sendWhatsapp ? await sendBookingWhatsapp("confirmed", booking, s) : undefined;
     return { ok: true, whatsapp };
   } catch (e) {
-    console.error(e);
+    await logError("Prenotazione telefonica non salvata", e);
     return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
   }
 }
@@ -265,7 +266,28 @@ export async function uploadImageAction(form: FormData): Promise<{ ok: true; url
   try {
     return { ok: true, url: await repo().uploadImage(await file.arrayBuffer(), file.type, ext) };
   } catch (e) {
-    console.error(e);
+    await logError("Foto non caricata", e, { type: file.type, size: file.size });
     return { ok: false, error: "Caricamento non riuscito" };
   }
+}
+
+// ---------- error log (developer only) --------------------------------
+
+export async function clearErrorLogsAction(): Promise<ActionResult> {
+  await requireDeveloper();
+  try {
+    await repo().clearErrorLogs();
+    revalidatePath(`${ADMIN_PATH}/errori`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
+  }
+}
+
+/** Writes a sample entry, to check that the log works end to end. */
+export async function testErrorLogAction(): Promise<ActionResult> {
+  const admin = await requireDeveloper();
+  await logError("Errore di prova da Gestione", new Error("Questo è un errore di prova: il log funziona"), { by: admin.email });
+  revalidatePath(`${ADMIN_PATH}/errori`);
+  return { ok: true };
 }

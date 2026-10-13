@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { repo } from "../data";
+import { logError } from "../errors";
 import { templateValues, WA_KIND_LABEL, type DeclineReason } from "../messages";
 import { ADMIN_PATH } from "../pwa";
 import { pushToDevices } from "../push";
@@ -61,7 +62,7 @@ export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Set
       await r.saveWhatsappMessage({ ...record, ...patch, updated_at: new Date().toISOString() });
     } catch (e) {
       // the table may be missing until the migration runs: sending matters more than the log
-      console.error("whatsapp: could not record message", e);
+      await logError("Messaggio WhatsApp non registrato", e);
     }
   };
 
@@ -84,7 +85,7 @@ export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Set
 
   if (!res.ok) {
     const error = explain(res.code, res.message);
-    console.error("whatsapp: send failed", kind, res.code, res.message);
+    await logError(`WhatsApp "${kind}" non inviato: ${error}`, undefined, { code: res.code, message: res.message, booking: b.id });
     await save({ status: "failed", error });
     return { sent: false, error };
   }
@@ -130,7 +131,7 @@ export async function whatsappByBooking(bookingIds: string[]): Promise<Record<st
   try {
     for (const m of await repo().listWhatsappMessages(bookingIds)) (out[m.booking_id] ??= []).push(m);
   } catch (e) {
-    console.error("whatsapp: could not read messages", e);
+    await logError("Stato dei messaggi WhatsApp non letto", e);
   }
   return out;
 }
