@@ -55,6 +55,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
    | `VAPID_SUBJECT` | `mailto:` con l'email del ristorante (contatto per i servizi push di Google/Apple) |
    | `YCLOUD_API_KEY`, `YCLOUD_WHATSAPP_FROM`, `YCLOUD_WEBHOOK_SECRET` | messaggi WhatsApp automatici ai clienti (vedi *Messaggi WhatsApp automatici*); senza, l'app apre WhatsApp con il messaggio pronto |
    | `RESEND_API_KEY`, `BOOKING_NOTIFY_EMAIL`, `BOOKING_FROM_EMAIL` | facoltative, email a ogni prenotazione |
+   | `CRON_SECRET` | una stringa lunga a caso (es. `openssl rand -hex 32`): protegge il cron che tiene sveglio Supabase |
 
 5. **Deploy**. Alla fine apri l'indirizzo `*.vercel.app` e prova: home, menu, una prenotazione, accesso a `/gestore-prometeo-2026` con l'utente Supabase, installazione dell'app e notifica di prova (Notifiche e app → Invia una prova).
 6. **Dominio**: Project → Settings → **Domains** → aggiungi il dominio e imposta i DNS indicati da Vercel presso il registrar. Poi aggiorna `NEXT_PUBLIC_SITE_URL` con il dominio e fai **Redeploy** (Deployments → ⋯ → Redeploy).
@@ -62,6 +63,9 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 8. Solo ora scarica e stampa il **QR del menu** da Gestione → Menu (punta a `NEXT_PUBLIC_SITE_URL/qr`).
 
 Ogni `git push` su `main` pubblica automaticamente una nuova versione. Le pagine pubbliche sono statiche e si rigenerano da sole quando l'admin salva una modifica.
+
+### Supabase sempre attivo (cron di Vercel)
+Il piano gratuito di Supabase mette in pausa il database dopo 7 giorni senza attività. `vercel.json` fa chiamare a Vercel, ogni giorno alle 6:00 UTC, `/api/cron/keepalive`, che fa una piccola lettura sul database: niente servizi esterni. Si vede in Vercel → Project → **Settings → Cron Jobs** (lì c'è anche *Run* per provarlo). Con `CRON_SECRET` impostato risponde solo a Vercel.
 
 ### Notifica email delle prenotazioni (facoltativa)
 Crea un account [Resend](https://resend.com), verifica il dominio e imposta `RESEND_API_KEY`, `BOOKING_NOTIFY_EMAIL`, `BOOKING_FROM_EMAIL`. È un'aggiunta alle notifiche push: l'app si aggiorna da sola appena arriva una notifica (e comunque ogni 60 secondi).
