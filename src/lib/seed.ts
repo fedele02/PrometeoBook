@@ -99,6 +99,8 @@ export const seedSettings: Settings = {
     whatsappAuto: true,
   },
   announcement: { enabled: false, text: "" },
+  // company data: never invented, the owner fills them in (Gestione → Locale e orari → Dati aziendali)
+  legal: { companyName: "", registeredOffice: "", vatNumber: "", taxCode: "", rea: "", shareCapital: "", pec: "" },
 };
 
 export const seedCategories: Category[] = [

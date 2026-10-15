@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Availability } from "@/app/(site)/prenota/actions";
 import { telHref } from "@/lib/site";
-import { IconMinus, IconPhone, IconPlus } from "../Icons";
+import { IconCheck, IconMinus, IconPhone, IconPlus } from "../Icons";
 
 /* Building blocks shared by the booking wizard and the guest's own booking page. */
 
@@ -127,6 +128,40 @@ export function Field({ label, hint, error, children }: { label: string; hint?: 
       {hint && <span className="block text-sm text-ink/55">{hint}</span>}
       <span className="mt-2 block">{children}</span>
     </label>
+  );
+}
+
+/**
+ * Explicit consent for the special requests (art. 9 GDPR): allergies and
+ * intolerances are health data. Shown only once something is written there;
+ * without it the guest can leave the field empty and tell the staff in person.
+ */
+export function NotesConsent({ checked, onChange, error }: { checked: boolean; onChange: (v: boolean) => void; error?: boolean }) {
+  return (
+    <label className={`mt-4 flex cursor-pointer items-start gap-4 border p-4 ${error ? "border-ember" : "border-ink/15"}`}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
+      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center border-2 border-ink/40 text-cream transition peer-checked:border-ink peer-checked:bg-ink peer-focus-visible:ring-2 peer-focus-visible:ring-gold">
+        {checked && <IconCheck className="h-5 w-5" strokeWidth={3} />}
+      </span>
+      <span className="leading-snug text-ink/80">
+        Acconsento all&apos;uso di queste richieste, comprese eventuali allergie o intolleranze, solo per preparare il tavolo e i piatti.
+        <span className="mt-1 block text-sm text-ink/55">
+          Facoltativo: se preferisci, lascia il campo vuoto e dillo in sala. Puoi cancellarle quando vuoi dalla pagina della prenotazione.
+        </span>
+      </span>
+    </label>
+  );
+}
+
+/** What happens to the guest's data, next to the send button: no checkbox, the booking itself is the legal basis. */
+export function PrivacyNotice() {
+  return (
+    <p className="mt-4 text-sm leading-relaxed text-ink/60">
+      Usiamo nome e telefono solo per gestire la prenotazione e inviarti su WhatsApp i messaggi che la riguardano.{" "}
+      <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-ink">
+        Informativa privacy
+      </Link>
+    </p>
   );
 }
 

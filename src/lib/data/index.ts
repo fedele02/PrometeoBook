@@ -21,6 +21,7 @@ export const getPublicContent = unstable_cache(
     const [settings, menu] = await Promise.all([r.getSettings(), r.getMenu()]);
     return { settings, menu };
   },
-  ["public-content"],
+  // bump the version when Settings gets new fields: cached entries of the old shape would lack them
+  ["public-content-v2"],
   { tags: [CONTENT_TAG], revalidate: 3600 },
 );

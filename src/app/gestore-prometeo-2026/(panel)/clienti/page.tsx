@@ -3,6 +3,7 @@ import { repo } from "@/lib/data";
 import { groupCustomers, isActive, type Customer } from "@/lib/customers";
 import { telHref, whatsappHref } from "@/lib/site";
 import { addDays, capitalize, formatDateLong, romeNow, serviceLabel, TZ } from "@/lib/time";
+import { DeleteCustomer } from "@/components/admin/DeleteCustomer";
 import { Card, PageTitle } from "@/components/admin/ui";
 import { STATUS } from "@/components/admin/status";
 import { IconChevron, IconPhone, IconUsers, IconWhatsapp } from "@/components/Icons";
@@ -161,6 +162,8 @@ function Detail({ c, today }: { c: Customer; today: string }) {
           );
         })}
       </ul>
+
+      <DeleteCustomer phoneKey={c.key} upcoming={c.bookings.filter((b) => isActive(b) && b.date >= today).length} />
     </>
   );
 }

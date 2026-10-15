@@ -7,7 +7,9 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { login, logout, requireAdmin } from "@/lib/auth";
+import { isActive, phoneKey } from "@/lib/customers";
 import { CONTENT_TAG, repo } from "@/lib/data";
+import { addDays, romeNow } from "@/lib/time";
 import { announce, pendingCount } from "@/lib/events";
 import { DEFAULT_PREFS, DEVICE_COOKIE, pushToDevices } from "@/lib/push";
 import { ADMIN_PATH } from "@/lib/pwa";
@@ -94,6 +96,26 @@ export async function cancelBookingAction(id: string) {
 
 export async function deleteBookingAction(id: string) {
   return guarded(() => repo().deleteBooking(id));
+}
+
+/**
+ * A guest asks to be forgotten (art. 17 GDPR) or objects to the visit history (art. 21):
+ * deletes every booking of that phone number, with its WhatsApp log, except the
+ * upcoming ones still waiting or confirmed (the guest can cancel those, or the staff).
+ */
+export async function deleteCustomerAction(key: string): Promise<ActionResult & { kept?: number }> {
+  await requireAdmin();
+  try {
+    const r = repo();
+    const today = romeNow().date;
+    const all = (await r.listBookings("2000-01-01", addDays(today, 400))).filter((b) => phoneKey(b.phone) === key);
+    const keep = all.filter((b) => isActive(b) && b.date >= today);
+    await Promise.all(all.filter((b) => !keep.includes(b)).map((b) => r.deleteBooking(b.id)));
+    return { ok: true, kept: keep.length };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, error: e instanceof Error ? e.message : "Errore imprevisto" };
+  }
 }
 
 /** Bookings taken by phone: already confirmed, no capacity check (the staff decides). */

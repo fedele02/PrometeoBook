@@ -23,7 +23,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 
 1. Crea un progetto su [supabase.com](https://supabase.com) (regione **EU – Frankfurt**, per il GDPR).
 2. **SQL Editor** → incolla ed esegui tutto `supabase/schema.sql` (tabelle, sicurezza RLS, funzioni di prenotazione e modifica atomiche, dispositivi per le notifiche, bucket foto `media`).
-   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`). Si possono rilanciare senza danni.
+   **Database già creato con una versione precedente?** Esegui, in ordine e una volta sola, i file di `supabase/migrations/` che non hai ancora eseguito: `2026-10-13_app-gestione.sql` (stato “rifiutata”, link privato del cliente, tabella `push_devices`, funzione `change_booking`), poi `2026-10-14_whatsapp.sql` (tabella `whatsapp_messages`), poi `2026-10-15_privacy.sql` (cancellazione automatica dei dati vecchi ogni notte con pg_cron, registro anti-spam). Si possono rilanciare senza danni.
 3. **Project Settings → API Keys**: copia URL, *publishable key* e *secret key* in `.env.local` (vedi `.env.example`).
 4. Carica menu e impostazioni iniziali: `npm run seed:supabase`
 5. **Authentication → Users → Add user**: crea l'utente del ristorante (email + password).
@@ -40,7 +40,7 @@ Per le notifiche push in locale servono le chiavi VAPID in `.env.local` (vedi `.
 
 1. Completa **Collegare Supabase** (sopra), compreso `npm run seed:supabase` e l'utente admin.
 2. Su [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → `fedele02/PrometeoBook` (collega l'account GitHub se richiesto).
-3. Nella schermata di import: Framework **Next.js** (rilevato da solo), Root Directory `./`, Build/Install command **lasciati di default**.
+3. Nella schermata di import: Framework **Next.js** (rilevato da solo), Root Directory `./`, Build/Install command **lasciati di default**. Le funzioni girano a **Francoforte** (`vercel.json` → `fra1`), vicino al database e dentro l'UE.
 4. Apri **Environment Variables** e aggiungi, per *Production, Preview e Development*:
 
    | Nome | Valore |
@@ -96,7 +96,7 @@ Il numero sull'icona dell'app (dove il sistema lo supporta) e sulla scheda *Rich
 |---|---|
 | **Prenotazioni** | giorno scelto con titolo e stato del servizio; fila dei **soli giorni con prenotazioni** (coperti e richieste in attesa) + calendario per gli altri; coperti per pranzo/cena con grafico per fascia oraria (arancio quando è quasi pieno); richieste del giorno con **Accetta / Rifiuta**; “In sala” in timeline con dettagli, storico, chiama/WhatsApp, annulla; prenotazione telefonica (+) |
 | **Richieste** | tutte le richieste da confermare, raggruppate per giorno, filtri Tutte / Oggi / Prossimi giorni |
-| **Clienti** | storico per numero di telefono: prenotazioni, coperti, annullate o rifiutate, date |
+| **Clienti** | storico per numero di telefono: prenotazioni, coperti, annullate o rifiutate, date; **Elimina i dati del cliente** se lo chiede (privacy: cancella passate, annullate e rifiutate, lascia quelle in arrivo) |
 | **Menu** | categorie e piatti: foto (ridimensionate nel browser, anche scattate dal telefono), descrizione, prezzo, allergeni UE, vegetariano/vegano/senza glutine, “firma dello chef” (in home), nascondi, esaurito, ordine |
 | **Locale e orari** | avviso in cima al sito, orari con più turni, chiusure straordinarie, regole prenotazioni (coperti per orario, intervallo, preavviso), contatti, testi, recensioni |
 | **Notifiche e app** | installazione, notifiche su questo dispositivo, cosa ricevere, dispositivi collegati, notifica di prova, esci |
@@ -145,10 +145,22 @@ Regole per numero di telefono (scritto in qualsiasi formato: `+39 333…`, `0039
 
 **Pagina del cliente** `/prenotazione/<codice segreto>`: il link compare nel riepilogo, nel messaggio WhatsApp di conferma e torna su `/prenota` dallo stesso telefono. Il cliente vede lo stato e può **modificare** giorno, ora, persone e note (la prenotazione torna “da confermare”) o **annullare**, fino al preavviso minimo impostato in *Locale e orari*; dopo, la pagina invita a chiamare.
 
+## Privacy e obblighi di legge
+
+- **Nessun banner cookie, di proposito**: il sito pubblico non usa cookie di statistica, profilazione o pubblicità e non carica nulla da server di terzi (font serviti da noi con `next/font`, mappa come immagine statica, Google Maps solo al tocco). Restano solo strumenti tecnici, descritti in `/privacy#cookie`, che non richiedono consenso (art. 122 Codice privacy, Linee guida Garante 10/6/2021). **Se si aggiungono Google Analytics, Pixel Meta, video YouTube o widget esterni serve un banner con blocco preventivo**: aggiornare anche l'informativa.
+- **Prenotazione**: nessuna casella obbligatoria (la base è il servizio richiesto, art. 6.1.b GDPR), solo l'avviso con il link all'informativa. Le **richieste particolari** possono contenere allergie (dati sanitari, art. 9): appena il cliente scrive qualcosa compare una casella di consenso, vuota di default, e il server rifiuta le note senza consenso (anche quando il cliente le modifica dalla sua pagina).
+- **Dati aziendali** in fondo a ogni pagina (art. 35 DPR 633/72, art. 2250 c.c.), dalle impostazioni.
+- Informativa e tempi di conservazione: `src/app/(site)/privacy/page.tsx` e `src/lib/legal.ts` (cambiare `PRIVACY_UPDATED` a ogni modifica). I fornitori YCloud e Resend compaiono solo se configurati.
+- **Cancellazione automatica**: ogni notte (03:30 UTC) la funzione SQL `purge_old_data` (pg_cron) svuota le note 30 giorni dopo la visita, cancella prenotazioni più vecchie di 24 mesi (con i loro messaggi), lo stato dei messaggi WhatsApp dopo 6 mesi e il registro anti-spam dopo un giorno. Se si cambiano i tempi: `src/lib/legal.ts` **e** la funzione in `supabase/schema.sql` / migrazione. Il job si vede in Supabase → Integrations → Cron.
+- **Diritti dei clienti**: richiesta di cancellazione o di uscire dallo storico → *Gestione → Clienti → cliente → Elimina i dati del cliente*.
+- **Recensioni**: sotto “Dicono di noi” una nota dice da dove vengono voto ed estratti e che non li verifichiamo noi (Codice del Consumo, art. 22 c. 4-bis). Gli estratti vanno riportati **senza modifiche**.
+- **Sicurezza**: header HTTP in `next.config.ts` (Content-Security-Policy, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy, HSTS); nessuna chiave segreta nel browser; RLS su tutte le tabelle. Anti-spam del modulo: massimo 4 richieste al giorno per numero e 5 all'ora / 10 al giorno per connessione (si salva solo un'impronta cifrata dell'IP, cancellata dopo un giorno). **Se si aggiunge uno script, un font, un video o una mappa esterni va aggiunto alla CSP** (e all'informativa), altrimenti il browser lo blocca.
+
 ## Struttura
 
 ```
-src/app/(site)/        home, menu, prenota (+ server actions), privacy
+src/app/(site)/        home, menu, prenota (+ server actions), privacy e cookie
+src/lib/legal.ts       tempi di conservazione e data dell'informativa privacy
 src/app/(site)/prenotazione/[token]/  pagina privata del cliente
 src/app/gestore-prometeo-2026/        app Gestione: login, prenotazioni, richieste, clienti, menu, locale, notifiche (+ server actions)
 public/gestore-prometeo-2026/         manifest, service worker (sw.js), icone e schermate di avvio dell'app
@@ -162,7 +174,7 @@ src/app/api/whatsapp/  webhook YCloud (stato dei messaggi)
 src/lib/pwa.ts         percorso, nome e immagini dell'app Gestione
 supabase/schema.sql    database (nuova installazione) · supabase/migrations/ per i database esistenti
 design/app-icon/       icona dell'app esportata da Penpot
-scripts/               seed Supabase, immagini dell'app (make-app-assets.ts), configurazione YCloud (whatsapp.ts)
+scripts/               seed Supabase, immagini dell'app (make-app-assets.ts), mappa statica (make-map.ts), configurazione YCloud (whatsapp.ts)
 ```
 
 ## Da dove vengono i contenuti
@@ -180,9 +192,11 @@ scripts/               seed Supabase, immagini dell'app (make-app-assets.ts), co
 | Voto 9,8/10 e 392 recensioni, km 0, tavoli all'aperto, cani ammessi, opzioni vegetariane | TheFork |
 | Estratti di recensioni (Annalisa P., Cosimo L., Rossana R.) | Tripadvisor, giugno–settembre 2026 — da verificare e aggiornare dall'admin |
 | Domande frequenti | risposte basate sui servizi indicati su TheFork e sul funzionamento del sito |
+| Mappa “Dove siamo” | dati © OpenStreetMap (ODbL), immagine generata da `npm run assets:map` (`scripts/make-map.ts`) |
+| Dati aziendali nel footer (ragione sociale, P.IVA, sede, REA, capitale) | inseriti dal cliente in *Gestione → Locale e orari → Dati aziendali*, dalla visura camerale; mai inventati |
 
 Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i testi della sezione prenotazione, le didascalie delle foto e la frase del footer “Ti aspettiamo sotto la nostra luna.” (modificabile dall'admin).
-**Da approvare anche**: il riepilogo dopo la richiesta (“Questa è una richiesta di prenotazione, non ancora confermata…”), i testi della pagina del cliente, i 4 messaggi WhatsApp automatici (`src/lib/whatsapp/templates.ts`), il consenso WhatsApp nel modulo di prenotazione, la sezione WhatsApp dell'informativa privacy e i testi delle notifiche (`src/lib/events.ts`).
+**Da approvare anche**: il riepilogo dopo la richiesta (“Questa è una richiesta di prenotazione, non ancora confermata…”), i testi della pagina del cliente, i 4 messaggi WhatsApp automatici (`src/lib/whatsapp/templates.ts`), la nota sulle recensioni in home, l'avviso privacy e il consenso per le richieste particolari nel modulo di prenotazione (`src/components/booking/parts.tsx`), tutta l'informativa privacy e cookie (`src/app/(site)/privacy/page.tsx`) con i tempi di conservazione proposti (`src/lib/legal.ts`) e i testi delle notifiche (`src/lib/events.ts`).
 
 ## Design
 
@@ -200,9 +214,12 @@ Testi scritti da noi (da far approvare al cliente): la descrizione della sala, i
 - **Prezzi mancanti**: i piatti presi dai post Facebook non hanno prezzo; vanno aggiunti dall'admin.
 - **Allergeni**: lasciati volutamente vuoti, li deve indicare la cucina piatto per piatto (sul sito compare “chiedi al personale”).
 - **Instagram** se esiste un profilo.
-- **Privacy**: `src/app/(site)/privacy/page.tsx` è un modello, va completato con ragione sociale e P.IVA.
+- **Dati aziendali (obbligatori per legge)**: ragione sociale, sede legale, P.IVA e, se società, REA e capitale sociale in *Gestione → Locale e orari → Dati aziendali*. Finché mancano, il footer non li mostra e l'app segnala “Da completare”.
+- **Privacy**: informativa e cookie in `/privacy`, scritte sul funzionamento reale del sito. Farle **rivedere da un consulente privacy** prima della pubblicazione; approvare i tempi di conservazione in `src/lib/legal.ts`.
+- **Cancellazione automatica dei dati**: in Supabase → Integrations → **Cron** → *Enable* (attiva l'estensione `pg_cron`), poi eseguire una volta `supabase/migrations/2026-10-15_privacy.sql` nel SQL Editor (su un database nuovo è già in `schema.sql`); poi controllare in Supabase → Integrations → Cron che il job `purge-old-data` esista.
+- **Adempimenti del ristorante (fuori dal sito)**: accettare i contratti per il trattamento dei dati (DPA) di Supabase, Vercel, YCloud e Resend; tenere il registro dei trattamenti (art. 30 GDPR); nominare per iscritto lo staff che usa l'app come autorizzato al trattamento; verificare sui DPA dove hanno sede e server i fornitori (trasferimenti extra UE citati nell'informativa).
 - **Testi WhatsApp e notifiche**: approvare i messaggi di conferma/rifiuto e il riepilogo della richiesta (vedi sopra).
 - **Email per le notifiche push**: mettere l'email del ristorante in `VAPID_SUBJECT`.
 - **WhatsApp automatico**: attivare YCloud seguendo *Messaggi WhatsApp automatici* (numero su WhatsApp Business da qualche settimana, modelli approvati da Meta) ed eseguire `supabase/migrations/2026-10-14_whatsapp.sql`.
-- **Privacy e YCloud**: chiedere a YCloud il contratto per il trattamento dei dati (DPA, GDPR) e completare l'informativa.
+- **Privacy e YCloud**: chiedere a YCloud il contratto per il trattamento dei dati (DPA, GDPR) e la sede dei server.
 - **Diritti sulle foto**: sono foto pubblicate dal ristorante; confermare con il cliente che si possano usare sul sito (e chi ne è l'autore).

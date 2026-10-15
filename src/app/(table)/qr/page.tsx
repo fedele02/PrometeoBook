@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getPublicContent } from "@/lib/data";
+import { legalParts } from "@/lib/site";
 import { MenuView } from "@/components/menu/MenuView";
 import { MotionProvider } from "@/components/motion/Reveal";
 import { Emblem, Ornament, Wordmark } from "@/components/Logo";
@@ -45,6 +47,12 @@ export default async function TableMenuPage() {
         <p className="mt-8 text-xs text-muted">
           {settings.name} {settings.subtitle} · {settings.address}, {settings.city}
         </p>
+        {legalParts(settings.legal).length > 0 && (
+          <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-muted">{legalParts(settings.legal).join(" · ")}</p>
+        )}
+        <Link href="/privacy" className="mt-3 inline-block py-2 text-xs text-muted underline underline-offset-2 hover:text-cream">
+          Privacy e cookie
+        </Link>
       </footer>
     </MotionProvider>
   );

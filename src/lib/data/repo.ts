@@ -40,6 +40,9 @@ export interface Repo {
   setBookingStatus(id: string, status: BookingStatus): Promise<void>;
   deleteBooking(id: string): Promise<void>;
   countBookingsByPhone(phone: string, sinceIso: string): Promise<number>;
+  /** anti-spam: booking requests sent from one connection (keyed hash of the IP, kept one day) */
+  logBookingAttempt(ipHash: string): Promise<void>;
+  countBookingAttempts(ipHash: string, sinceIso: string): Promise<number>;
 
   /** devices subscribed to the staff app's notifications */
   listDevices(): Promise<PushDevice[]>;

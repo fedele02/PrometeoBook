@@ -10,7 +10,7 @@ import { capitalize, formatDateLong, romeNow } from "@/lib/time";
 import type { BookingStatus, Settings } from "@/lib/types";
 import { IconCalendar, IconClock, IconPhone, IconUser, IconUsers, IconWhatsapp } from "../Icons";
 import { Calendar } from "./Calendar";
-import { Choice, ErrorBox, MorePeople, Slots, Title } from "./parts";
+import { Choice, ErrorBox, MorePeople, NotesConsent, Slots, Title } from "./parts";
 
 type GuestBooking = { date: string; time: string; people: number; name: string; phone: string; notes: string; status: BookingStatus };
 
@@ -201,6 +201,9 @@ function EditBooking({
   const [date, setDate] = useState(booking.date);
   const [time, setTime] = useState<string | null>(booking.time);
   const [notes, setNotes] = useState(booking.notes);
+  const [notesConsent, setNotesConsent] = useState(false);
+  // consent is asked again only for new or changed special requests
+  const needsConsent = notes.trim() !== "" && notes.trim() !== booking.notes;
   const [avail, setAvail] = useState<Availability | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, startLoading] = useTransition();
@@ -223,9 +226,10 @@ function EditBooking({
 
   const save = () => {
     if (!time) return setError("Scegli un orario.");
+    if (needsConsent && !notesConsent) return setError("Per inviare le richieste particolari spunta il consenso, oppure lascia il campo vuoto.");
     setError(null);
     startSaving(async () => {
-      const res = await changeMyBooking(token, { date, time, people, notes });
+      const res = await changeMyBooking(token, { date, time, people, notes, notesConsent });
       if (res.ok) onClose("Modifica inviata: il ristorante la riconfermerà con un messaggio WhatsApp.");
       else {
         setError(res.error);
@@ -264,6 +268,7 @@ function EditBooking({
         <span className="text-sm font-semibold uppercase tracking-[0.16em] text-ink/55">Richieste particolari</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} rows={2} className="input input-paper mt-2.5 min-h-24 py-3" />
       </label>
+      {needsConsent && <NotesConsent checked={notesConsent} onChange={setNotesConsent} />}
 
       {error && <ErrorBox>{error}</ErrorBox>}
 

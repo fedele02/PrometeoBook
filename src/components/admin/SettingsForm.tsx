@@ -29,6 +29,7 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
 
   const up = (patch: Partial<Settings>) => setS((x) => ({ ...x, ...patch }));
   const upBooking = (patch: Partial<Settings["booking"]>) => setS((x) => ({ ...x, booking: { ...x.booking, ...patch } }));
+  const upLegal = (patch: Partial<Settings["legal"]>) => setS((x) => ({ ...x, legal: { ...x.legal, ...patch } }));
   const setDay = (i: number, day: Settings["hours"][number]) =>
     setS((x) => {
       const hours = [...x.hours] as Settings["hours"];
@@ -54,7 +55,12 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
     });
 
   const num = (v: string) => Math.max(0, Math.round(Number(v) || 0));
-  const missing = [!s.phone && "telefono", !s.email && "email"].filter(Boolean);
+  const missing = [
+    !s.phone && "telefono",
+    !s.email && "email",
+    !s.legal.companyName && "ragione sociale",
+    !s.legal.vatNumber && "partita IVA",
+  ].filter(Boolean);
 
   return (
     <div className="pb-24">
@@ -62,7 +68,7 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
 
       {missing.length > 0 && (
         <p className="mb-5 rounded-md border border-ember/30 bg-ember/10 px-4 py-3 text-sm">
-          Da completare: <b>{missing.join(", ")}</b>. Senza telefono il sito non mostra il tasto “Chiama”.
+          Da completare: <b>{missing.join(", ")}</b>. Senza telefono il sito non mostra il tasto “Chiama”; ragione sociale e partita IVA sono obbligatorie per legge (vedi Dati aziendali).
         </p>
       )}
 
@@ -240,6 +246,37 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
             </FieldLabel>
             <FieldLabel label="Facebook (link)">
               <input value={s.facebook} onChange={(e) => up({ facebook: e.target.value })} className={smallInput} placeholder="https://facebook.com/…" />
+            </FieldLabel>
+          </div>
+        </Card>
+
+        {/* ---------- company data (required by law) ---------- */}
+        <Card>
+          <h2 className="font-display text-lg tracking-[0.06em]">Dati aziendali</h2>
+          <p className="mt-1 text-sm text-cream/60">
+            Obbligatori per legge: compaiono in fondo a ogni pagina del sito e nell&apos;informativa privacy. Copiali dalla visura camerale.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <FieldLabel label="Ragione sociale" hint="con la forma giuridica, es. “Rossi S.r.l.”">
+              <input value={s.legal.companyName} onChange={(e) => upLegal({ companyName: e.target.value })} className={smallInput} />
+            </FieldLabel>
+            <FieldLabel label="Sede legale" hint="indirizzo completo">
+              <input value={s.legal.registeredOffice} onChange={(e) => upLegal({ registeredOffice: e.target.value })} className={smallInput} />
+            </FieldLabel>
+            <FieldLabel label="Partita IVA">
+              <input value={s.legal.vatNumber} onChange={(e) => upLegal({ vatNumber: e.target.value })} inputMode="numeric" className={smallInput} placeholder="11 cifre" />
+            </FieldLabel>
+            <FieldLabel label="Codice fiscale" hint="solo se diverso dalla partita IVA">
+              <input value={s.legal.taxCode} onChange={(e) => upLegal({ taxCode: e.target.value })} className={smallInput} />
+            </FieldLabel>
+            <FieldLabel label="Numero REA" hint="solo società, es. MT-123456">
+              <input value={s.legal.rea} onChange={(e) => upLegal({ rea: e.target.value })} className={smallInput} />
+            </FieldLabel>
+            <FieldLabel label="Capitale sociale" hint="solo S.r.l. / S.p.A., es. 10.000,00 € i.v.">
+              <input value={s.legal.shareCapital} onChange={(e) => upLegal({ shareCapital: e.target.value })} className={smallInput} />
+            </FieldLabel>
+            <FieldLabel label="PEC" hint="facoltativa">
+              <input type="email" value={s.legal.pec} onChange={(e) => upLegal({ pec: e.target.value })} className={smallInput} />
             </FieldLabel>
           </div>
         </Card>

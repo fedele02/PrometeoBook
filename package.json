@@ -10,7 +10,8 @@
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
     "seed:supabase": "node --env-file=.env.local scripts/seed-supabase.ts",
     "assets:app": "node scripts/make-app-assets.ts",
-    "whatsapp": "node --env-file-if-exists=.env.local scripts/whatsapp.ts"
+    "whatsapp": "node --env-file-if-exists=.env.local scripts/whatsapp.ts",
+    "assets:map": "node scripts/make-map.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

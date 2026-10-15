@@ -12,6 +12,8 @@ type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings
 const DB_FILE = path.join(process.cwd(), "data", "local-db.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
+const attempts: { ipHash: string; at: string }[] = [];
+
 // Serialize every read-modify-write so concurrent requests can't lose data.
 let queue: Promise<unknown> = Promise.resolve();
 function locked<T>(fn: () => Promise<T>): Promise<T> {
@@ -24,7 +26,12 @@ async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(DB_FILE, "utf8")) as Db;
     // settings added in later versions get their defaults
-    db.settings = { ...seedSettings, ...db.settings, booking: { ...seedSettings.booking, ...db.settings.booking } };
+    db.settings = {
+      ...seedSettings,
+      ...db.settings,
+      booking: { ...seedSettings.booking, ...db.settings.booking },
+      legal: { ...seedSettings.legal, ...db.settings.legal },
+    };
     db.devices ??= [];
     db.whatsapp ??= [];
     // bookings saved before guests could manage them get their private link
@@ -141,9 +148,21 @@ export const localRepo: Repo = {
       const b = db.bookings.find((x) => x.id === id);
       if (b) b.status = status;
     }),
-  deleteBooking: (id) => mutate((db) => void (db.bookings = db.bookings.filter((b) => b.id !== id))),
+  // like "on delete cascade" in Supabase: the booking's WhatsApp log goes with it
+  deleteBooking: (id) =>
+    mutate((db) => {
+      db.bookings = db.bookings.filter((b) => b.id !== id);
+      db.whatsapp = db.whatsapp.filter((m) => m.booking_id !== id);
+    }),
   async countBookingsByPhone(phone, sinceIso) {
     return (await read()).bookings.filter((b) => b.phone === phone && b.created_at >= sinceIso).length;
+  },
+  // demo mode: the anti-spam log lives in memory only
+  async logBookingAttempt(ipHash) {
+    attempts.push({ ipHash, at: new Date().toISOString() });
+  },
+  async countBookingAttempts(ipHash, sinceIso) {
+    return attempts.filter((a) => a.ipHash === ipHash && a.at >= sinceIso).length;
   },
 
   listDevices: async () => (await read()).devices,

@@ -58,6 +58,11 @@ Body text never below 16 px on mobile; line length ≤ 70 characters.
 - **Mobile bar**: Chiama + Prenota, fixed bottom with safe-area, appears after the hero.
 - **Photos**: square corners, captions on a bottom scrim; hover zoom ≤ 1.03 inside an overflow mask (no layout shift).
 - **Callout** (from their posts): 1 px left rule, bold title, one line of text.
+- **Map**: static image in the site's palette (`public/img/mappa-1600.webp`, built by `npm run assets:map`), gold pin,
+  `btn-gold` “Apri in Google Maps” bottom-left, “© OpenStreetMap” bottom-right. Never a Google Maps iframe (privacy: no third-party requests before a tap).
+- **Consent checkbox** (booking, paper surface): 28 px square, empty by default, whole bordered row is the tap target, `ember` border on error.
+  Only for data that needs consent (special requests = possible health data); the booking itself gets a plain notice + link, never a mandatory box.
+- **Legal line** (footer and QR menu): company data in `muted`, 14 px, joined by “ · ”, under the copyright row.
 - **Sheet / modal**: bottom sheet on phones, drag only from the handle.
 
 ## Staff app “Prometeo Gestione” (`/gestore-prometeo-2026`)

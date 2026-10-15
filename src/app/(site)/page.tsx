@@ -198,6 +198,9 @@ export default async function HomePage() {
                 ))}
               </Stagger>
             )}
+
+            {/* Codice del Consumo art. 22 c. 4-bis: say where reviews come from and whether we verify them */}
+            <p className="mt-10 max-w-3xl text-sm leading-relaxed text-cream/60 md:mt-14">{reviewsNote(s)}</p>
           </div>
         </section>
       )}
@@ -315,14 +318,28 @@ export default async function HomePage() {
             </Reveal>
           </div>
 
-          <Reveal delay={100} className="-mx-6 md:mx-0">
-            <iframe
-              title="Mappa: Prometeo Fine Dining, Via Michele Torraca 10, Matera"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(`${s.address}, ${s.city}`)}&output=embed`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="h-80 w-full border-0 [filter:invert(.92)_hue-rotate(180deg)_grayscale(1)_contrast(.9)] md:h-full md:min-h-[32rem]"
-            />
+          {/* static map served by us (scripts/make-map.ts): no Google iframe, so no visitor data leaves before a tap */}
+          <Reveal delay={100} className="relative -mx-6 h-80 md:mx-0 md:h-full md:min-h-[32rem]">
+            <a href={s.mapsUrl} target="_blank" rel="noopener" className="group absolute inset-0 block overflow-hidden">
+              <Image
+                src="/img/mappa-1600.webp"
+                alt={`Mappa: ${s.name} ${s.subtitle}, ${s.address}, ${s.city}`}
+                fill
+                sizes="(min-width: 768px) 50vw, 100vw"
+                className="object-cover transition-opacity duration-200 group-hover:opacity-90"
+              />
+              <span className="btn btn-gold absolute bottom-4 left-4">
+                Apri in Google Maps <IconArrow className="h-3.5 w-3.5" />
+              </span>
+            </a>
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener"
+              className="absolute right-0 top-0 bg-ink/80 px-2 py-1 text-[0.7rem] text-cream/70 hover:text-cream"
+            >
+              © OpenStreetMap
+            </a>
           </Reveal>
         </div>
       </section>
@@ -390,4 +407,15 @@ function JsonLd({ s }: { s: Settings }) {
       }
     : null;
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq ? [restaurant, faq] : restaurant) }} />;
+}
+
+/** Transparency on the reviews shown (consumer code, art. 22 c. 4-bis, after the Omnibus directive). */
+function reviewsNote(s: Settings) {
+  const sources = [...new Set(s.reviews.map((r) => r.source).filter(Boolean))];
+  const parts = [
+    s.rating.score && `Il voto e il numero di recensioni sono quelli pubblicati da ${s.rating.source}, che ne gestisce la raccolta e le verifiche.`,
+    sources.length > 0 &&
+      `Le frasi sono brevi estratti di recensioni pubbliche su ${sources.join(" e ")}, scelti da noi e riportati senza modifiche; non verifichiamo direttamente chi le ha scritte.`,
+  ];
+  return parts.filter(Boolean).join(" ");
 }

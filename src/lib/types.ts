@@ -37,6 +37,26 @@ export type BookingSettings = {
   whatsappAuto: boolean;
 };
 
+/**
+ * Company data the law wants on the site: VAT number on the home page
+ * (art. 35 DPR 633/72), plus registered office, REA and share capital for
+ * companies (art. 2250 c.c.). Shown in the footer and in the privacy notice.
+ */
+export type LegalInfo = {
+  /** ragione sociale, with the legal form (e.g. "Rossi S.r.l.", "Mario Rossi" for a sole trader) */
+  companyName: string;
+  /** sede legale */
+  registeredOffice: string;
+  vatNumber: string;
+  /** only when it differs from the VAT number */
+  taxCode: string;
+  /** companies only, e.g. "MT-123456" */
+  rea: string;
+  /** limited companies only, e.g. "10.000,00 € i.v." */
+  shareCapital: string;
+  pec: string;
+};
+
 export type Settings = {
   name: string;
   subtitle: string;
@@ -66,6 +86,7 @@ export type Settings = {
   closures: Closure[];
   booking: BookingSettings;
   announcement: { enabled: boolean; text: string };
+  legal: LegalInfo;
 };
 
 export type Category = {

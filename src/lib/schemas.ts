@@ -46,6 +46,15 @@ export const settingsSchema = z.object({
     whatsappAuto: z.boolean(),
   }),
   announcement: z.object({ enabled: z.boolean(), text: text(200) }),
+  legal: z.object({
+    companyName: text(120),
+    registeredOffice: text(160),
+    vatNumber: text(20).refine((v) => !v || /^(IT)?\d{11}$/i.test(v.replace(/\s/g, "")), "Partita IVA non valida (11 cifre)"),
+    taxCode: text(20),
+    rea: text(30),
+    shareCapital: text(40),
+    pec: z.union([z.literal(""), z.email("PEC non valida")]),
+  }),
 });
 
 export const categorySchema = z.object({
@@ -101,6 +110,7 @@ const FIELD_NAMES: Record<string, string> = {
   closures: "Chiusure",
   booking: "Prenotazioni",
   announcement: "Avviso",
+  legal: "Dati aziendali",
   rating: "Voto",
   reviews: "Recensioni",
   faq: "Domande frequenti",

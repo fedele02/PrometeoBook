@@ -32,7 +32,7 @@ export function supabaseRepo(): Repo {
       const res = await db.from("settings").select("data").eq("id", 1).maybeSingle();
       if (res.error) throw new Error(res.error.message);
       const s = (res.data?.data ?? {}) as Partial<Settings>;
-      return { ...seedSettings, ...s, booking: { ...seedSettings.booking, ...s.booking } };
+      return { ...seedSettings, ...s, booking: { ...seedSettings.booking, ...s.booking }, legal: { ...seedSettings.legal, ...s.legal } };
     },
     async saveSettings(s) {
       check(await db.from("settings").upsert({ id: 1, data: s, updated_at: new Date().toISOString() }));
@@ -139,6 +139,18 @@ export function supabaseRepo(): Repo {
         .from("bookings")
         .select("id", { count: "exact", head: true })
         .eq("phone", phone)
+        .gte("created_at", sinceIso);
+      if (res.error) throw new Error(res.error.message);
+      return res.count ?? 0;
+    },
+    async logBookingAttempt(ipHash) {
+      check(await db.from("booking_attempts").insert({ ip_hash: ipHash }));
+    },
+    async countBookingAttempts(ipHash, sinceIso) {
+      const res = await db
+        .from("booking_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ipHash)
         .gte("created_at", sinceIso);
       if (res.error) throw new Error(res.error.message);
       return res.count ?? 0;

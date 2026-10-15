@@ -1,5 +1,7 @@
 "use server";
 
+import { createHmac } from "node:crypto";
+import { headers } from "next/headers";
 import { after } from "next/server";
 import { z } from "zod";
 import { guestCanManage, sameServiceBooking } from "@/lib/customers";
@@ -48,17 +50,23 @@ const phone = z
   .transform((v) => v.replace(/[\s().-]/g, ""))
   .refine((v) => /^\+?\d{6,15}$/.test(v), "Controlla il numero di telefono");
 
-const bookingSchema = z.object({
-  date: z.string().refine(isValidDate),
-  time: z.string().regex(/^\d{2}:\d{2}$/),
-  people: z.number().int().min(1).max(60),
-  name: z.string().trim().min(2, "Scrivi il tuo nome").max(80),
-  phone,
-  notes: z.string().trim().max(500).default(""),
-  privacy: z.literal(true, { error: "Serve il consenso per gestire la prenotazione" }),
-  // honeypot: real people never see nor fill this field
-  website: z.string().max(0).optional(),
-});
+// Legal basis of a booking is the contract itself (art. 6.1.b GDPR): no consent box.
+// The special requests may hold allergies (health data, art. 9): they need explicit consent.
+const NOTES_CONSENT = "Per inviare le richieste particolari serve il consenso, oppure lascia il campo vuoto.";
+
+const bookingSchema = z
+  .object({
+    date: z.string().refine(isValidDate),
+    time: z.string().regex(/^\d{2}:\d{2}$/),
+    people: z.number().int().min(1).max(60),
+    name: z.string().trim().min(2, "Scrivi il tuo nome").max(80),
+    phone,
+    notes: z.string().trim().max(500).default(""),
+    notesConsent: z.boolean().default(false),
+    // honeypot: real people never see nor fill this field
+    website: z.string().max(0).optional(),
+  })
+  .refine((b) => !b.notes || b.notesConsent, { message: NOTES_CONSENT, path: ["notesConsent"] });
 
 export type BookingInput = z.input<typeof bookingSchema>;
 export type BookingResult =
@@ -87,6 +95,23 @@ async function checkSlot(
   return null;
 }
 
+/**
+ * The guest's connection, as a keyed hash: the IP address itself is never stored.
+ * Vercel sets x-forwarded-for; behind other proxies the first address is the client.
+ */
+async function connectionKey() {
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown";
+  const secret = process.env.SUPABASE_SECRET_KEY ?? process.env.ADMIN_SESSION_SECRET ?? "prometeo-local";
+  return createHmac("sha256", secret).update(ip).digest("hex").slice(0, 32);
+}
+
+// Anti-spam per connection: generous, because families, offices and mobile
+// carriers share one address. Each request may send a paid WhatsApp message.
+const PER_HOUR = 5;
+const PER_DAY = 10;
+const TOO_MANY = "Troppe richieste da questa connessione. Riprova più tardi oppure chiamaci.";
+
 const SLOT_TAKEN = "Ci dispiace, questo orario è appena stato riempito. Scegline un altro.";
 
 export async function submitBooking(input: BookingInput): Promise<BookingResult> {
@@ -108,6 +133,20 @@ export async function submitBooking(input: BookingInput): Promise<BookingResult>
   const since = new Date(Date.now() - 864e5).toISOString();
   if ((await r.countBookingsByPhone(b.phone, since)) >= 4)
     return { ok: false, error: "Hai già effettuato diverse prenotazioni oggi. Per modifiche chiamaci." };
+
+  // and per connection, so nobody can flood other people's numbers with messages
+  // (if the log is unavailable, e.g. migration not run yet, bookings still go through)
+  try {
+    const ip = await connectionKey();
+    const [lastHour, lastDay] = await Promise.all([
+      r.countBookingAttempts(ip, new Date(Date.now() - 36e5).toISOString()),
+      r.countBookingAttempts(ip, since),
+    ]);
+    if (lastHour >= PER_HOUR || lastDay >= PER_DAY) return { ok: false, error: TOO_MANY };
+    await r.logBookingAttempt(ip);
+  } catch (e) {
+    console.error("booking rate limit unavailable", e);
+  }
 
   try {
     // online bookings are always requests: the staff accepts or refuses them
@@ -131,6 +170,8 @@ const changeSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/),
   people: z.number().int().min(1).max(60),
   notes: z.string().trim().max(500).default(""),
+  /** needed only when the special requests are new or changed */
+  notesConsent: z.boolean().default(false),
 });
 
 export type GuestResult = { ok: true } | { ok: false; error: string; field?: string; slotFull?: boolean };
@@ -140,11 +181,12 @@ const TOO_LATE = "Mancano poche ore: per modifiche o per annullare chiamaci.";
 export async function changeMyBooking(token: string, input: z.input<typeof changeSchema>): Promise<GuestResult> {
   const parsed = changeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const change = parsed.data;
+  const { notesConsent, ...change } = parsed.data;
   const r = repo();
   const [s, b] = await Promise.all([r.getSettings(), r.getBookingByToken(token)]);
   if (!b) return { ok: false, error: "Prenotazione non trovata." };
   if (!guestCanManage(b, s)) return { ok: false, error: TOO_LATE };
+  if (change.notes && change.notes !== b.notes && !notesConsent) return { ok: false, error: NOTES_CONSENT, field: "notesConsent" };
 
   const before = { date: b.date, time: b.time, people: b.people, notes: b.notes };
   if (before.date === change.date && before.time === change.time && before.people === change.people && before.notes === change.notes)

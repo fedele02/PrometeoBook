@@ -7,9 +7,9 @@ import { getAvailability, submitBooking, type Availability } from "@/app/(site)/
 import { telHref } from "@/lib/site";
 import { addDays, capitalize, dateParts, dayState, formatDateLong, romeNow } from "@/lib/time";
 import type { Settings } from "@/lib/types";
-import { IconCalendar, IconCheck, IconClock, IconUser, IconUsers, IconWhatsapp } from "../Icons";
+import { IconCalendar, IconClock, IconUser, IconUsers, IconWhatsapp } from "../Icons";
 import { Calendar } from "./Calendar";
-import { Choice, ErrorBox, Field, MorePeople, Slots, Title } from "./parts";
+import { Choice, ErrorBox, Field, MorePeople, NotesConsent, PrivacyNotice, Slots, Title } from "./parts";
 import { downloadIcs } from "./ics";
 import { rememberBooking } from "@/lib/guest-bookings";
 
@@ -47,7 +47,7 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
   const [name, setName] = useState(() => savedGuest().name);
   const [phone, setPhone] = useState(() => savedGuest().phone);
   const [notes, setNotes] = useState("");
-  const [privacy, setPrivacy] = useState(false);
+  const [notesConsent, setNotesConsent] = useState(false);
   const [hp, setHp] = useState("");
 
   const [avail, setAvail] = useState<Availability | null>(null);
@@ -90,10 +90,11 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
     e.preventDefault();
     if (name.trim().length < 2) return setError({ msg: "Scrivi il tuo nome, per favore.", field: "name" });
     if (phone.replace(/\D/g, "").length < 6) return setError({ msg: "Scrivi un numero di telefono valido.", field: "phone" });
-    if (!privacy) return setError({ msg: "Spunta la casella del consenso per continuare.", field: "privacy" });
+    if (notes.trim() && !notesConsent)
+      return setError({ msg: "Per inviare le richieste particolari spunta il consenso, oppure lascia il campo vuoto.", field: "notesConsent" });
     setError(null);
     startTransition(async () => {
-      const res = await submitBooking({ date: date!, time: time!, people: people!, name, phone, notes, privacy: true, website: hp });
+      const res = await submitBooking({ date: date!, time: time!, people: people!, name, phone, notes, notesConsent, website: hp });
       if (res.ok) {
         try {
           localStorage.setItem(SAVED, JSON.stringify({ name, phone }));
@@ -253,7 +254,7 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                     className="input input-paper"
                   />
                 </Field>
-                <Field label="Richieste particolari" hint="Facoltativo: allergie, seggiolone, un compleanno…">
+                <Field label="Richieste particolari" hint="Facoltativo: seggiolone, un compleanno, allergie…">
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -274,19 +275,9 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                   aria-hidden
                 />
 
-                <label className={`mt-6 flex cursor-pointer items-start gap-4 border p-4 ${error?.field === "privacy" ? "border-ember" : "border-ink/15"}`}>
-                  <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)} className="peer sr-only" />
-                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center border-2 border-ink/40 text-cream transition peer-checked:border-ink peer-checked:bg-ink peer-focus-visible:ring-2 peer-focus-visible:ring-gold">
-                    {privacy && <IconCheck className="h-5 w-5" strokeWidth={3} />}
-                  </span>
-                  <span className="leading-snug text-ink/80">
-                    Acconsento all&apos;uso dei miei dati solo per gestire questa prenotazione e a ricevere su WhatsApp i messaggi che la riguardano (
-                    <Link href="/privacy" target="_blank" className="underline underline-offset-2">
-                      informativa
-                    </Link>
-                    ).
-                  </span>
-                </label>
+                {notes.trim() && <NotesConsent checked={notesConsent} onChange={setNotesConsent} error={error?.field === "notesConsent"} />}
+
+                <PrivacyNotice />
 
                 {error && <ErrorBox>{error.msg}</ErrorBox>}
 

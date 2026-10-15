@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { hoursSummary } from "@/lib/time";
-import { telHref } from "@/lib/site";
+import { legalParts, telHref } from "@/lib/site";
 import type { Settings } from "@/lib/types";
 import { Emblem, Wordmark } from "../Logo";
 
@@ -80,7 +80,15 @@ export function Footer({ settings: s }: { settings: Settings }) {
         <Link href="/privacy" className="py-2 hover:text-cream">
           Privacy
         </Link>
+        <Link href="/privacy#cookie" className="py-2 hover:text-cream">
+          Cookie
+        </Link>
       </div>
+
+      {/* required by law on every page: VAT number (art. 35 DPR 633/72), company data (art. 2250 c.c.) */}
+      {legalParts(s.legal).length > 0 && (
+        <p className="mx-auto mt-3 max-w-7xl px-6 text-sm leading-relaxed text-muted md:px-10">{legalParts(s.legal).join(" · ")}</p>
+      )}
     </footer>
   );
 }
