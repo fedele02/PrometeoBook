@@ -134,7 +134,7 @@ export function supabaseRepo(): Repo {
       return res.data as Booking;
     },
     async setBookingStatus(id, status) {
-      check(await db.from("bookings").update({ status }).eq("id", id));
+      check(await db.from("bookings").update({ status, guest_change: null }).eq("id", id));
     },
     async deleteBooking(id) {
       check(await db.from("bookings").delete().eq("id", id));

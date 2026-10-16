@@ -72,7 +72,10 @@ create table if not exists public.bookings (
   -- secret of the guest's private page /prenotazione/<token>
   manage_token uuid not null default gen_random_uuid() unique,
   -- short link of the same page, sent in the messages: /p/<short_code>
-  short_code  text not null default public.gen_short_code() unique
+  short_code  text not null default public.gen_short_code() unique,
+  -- what the guest changed on their own, until the staff answers:
+  -- {"at": <timestamp of the last change>, "before": {date, time, people, notes}}
+  guest_change jsonb
 );
 create index if not exists bookings_date_idx on public.bookings (date, time);
 create index if not exists bookings_phone_idx on public.bookings (phone, created_at);
@@ -198,9 +201,11 @@ declare
   v_lunch  boolean := (p->>'time') < '17:00';
   v_taken  int;
   v_row    public.bookings;
+  v_old    public.bookings;
 begin
   perform pg_advisory_xact_lock(hashtext(v_date::text || case when v_lunch then ' lunch' else ' dinner' end));
 
+  select * into v_old from public.bookings where id = p_id;
   select coalesce(sum(people), 0) into v_taken
     from public.bookings
    where date = v_date and (time < '17:00') = v_lunch and status in ('pending','confirmed') and id <> p_id;
@@ -211,7 +216,13 @@ begin
   update public.bookings
      set date = v_date, time = v_time, people = v_people,
          notes = coalesce(p->>'notes', ''),
-         status = case when p->>'status' in ('pending','confirmed') then p->>'status' else 'pending' end
+         status = case when p->>'status' in ('pending','confirmed') then p->>'status' else 'pending' end,
+         -- keep the values from before the first change until the staff answers
+         guest_change = jsonb_build_object(
+           'at', now(),
+           'before', coalesce(v_old.guest_change->'before', jsonb_build_object(
+             'date', v_old.date, 'time', v_old.time, 'people', v_old.people, 'notes', v_old.notes))
+         )
    where id = p_id
   returning * into v_row;
 

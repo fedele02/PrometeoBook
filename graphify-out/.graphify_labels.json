@@ -1,13 +1,8 @@
 {
-  "0": "time.ts",
   "1": "next",
   "2": "Icons.tsx",
   "3": "MenuEditor.tsx",
-  "4": "whatsapp.ts",
   "5": "README - Prometeo Fine Dining sito web",
-  "6": "BookingWizard.tsx",
-  "7": "package.json",
-  "8": "gestore-prometeo-2026/actions.ts",
   "9": "auth.ts",
   "10": "compilerOptions",
   "11": "schema.sql",
@@ -19,8 +14,6 @@
   "17": "loading.tsx",
   "18": "2026-10-16_coperti-per-servizio.sql",
   "19": "2026-10-17_gruppi-fino-al-servizio.sql",
-  "20": "BookingsBoard.tsx",
-  "21": "[code]/page.tsx",
   "22": "2026-10-18_link-corto.sql",
   "25": "instrumentation-client.ts",
   "26": "2026-10-15_error-logs.sql"

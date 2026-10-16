@@ -59,10 +59,10 @@ export const TEMPLATES: Record<WhatsappKind, TemplateDef> = {
   },
   cancelled: {
     kind: "cancelled",
-    name: "prenotazione_annullata_v1",
+    name: "prenotazione_annullata_v2",
     body:
-      "Ciao {{1}}, ti informiamo che la tua prenotazione per {{2}}, {{3}} alle ore {{4}} è stata annullata dal ristorante.\n\n" +
-      "Per qualsiasi chiarimento rispondi a questo messaggio o chiamaci.",
+      "Gentile {{1}}, ti confermiamo che la tua prenotazione per {{2}}, {{3}} alle ore {{4}} è stata annullata.\n\n" +
+      "Se hai bisogno di aiuto o vuoi spostarla a un'altra data, rispondi a questo messaggio o chiamaci. Saremo felici di accoglierti presto.",
     example: SAMPLE,
     button: { text: "Prenota di nuovo", path: "/prenota", withCode: false },
   },

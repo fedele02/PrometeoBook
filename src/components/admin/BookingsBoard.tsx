@@ -12,6 +12,7 @@ import { capitalize, dateParts, formatDateLong, relativeDay, serviceLabel } from
 import type { Booking, Settings, WhatsappMessage } from "@/lib/types";
 import { WA_KIND_LABEL, WA_STATUS_LABEL, whatsappText } from "@/lib/messages";
 import { IconCalendar, IconChevron, IconNote, IconPhone, IconPlus, IconUsers, IconWhatsapp } from "../Icons";
+import { GuestChange } from "./GuestChange";
 import { PhoneBookingModal } from "./PhoneBookingModal";
 import { RequestCard } from "./RequestCard";
 import { STATUS } from "./status";
@@ -127,7 +128,7 @@ export function BookingsBoard({
         </div>
       )}
 
-      <Timeline rows={rows} service={current?.label ?? service} isToday={date === today} settings={settings} />
+      <Timeline rows={rows} service={current?.label ?? service} isToday={date === today} settings={settings} waAuto={waAuto} />
 
       <PhoneBookingModal
         key={date}
@@ -264,7 +265,7 @@ function Capacity({ rows, service, settings }: { rows: Row[]; service: DayServic
 
 /* ---------- who is coming: timeline ------------------------------------ */
 
-function Timeline({ rows, service, isToday, settings }: { rows: Row[]; service: ServiceName; isToday: boolean; settings: Settings }) {
+function Timeline({ rows, service, isToday, settings, waAuto }: { rows: Row[]; service: ServiceName; isToday: boolean; settings: Settings; waAuto: boolean }) {
   const [showLost, setShowLost] = useState(false);
   const inService = rows.filter((b) => serviceLabel(b.time) === service).sort((a, b) => a.time.localeCompare(b.time) || a.created_at.localeCompare(b.created_at));
   const active = inService.filter(isActive);
@@ -287,7 +288,7 @@ function Timeline({ rows, service, isToday, settings }: { rows: Row[]; service: 
         <ol className="relative mt-4">
           <span className="absolute bottom-6 left-[3.75rem] top-3 w-0.5 bg-white/10" aria-hidden />
           {active.map((b, i) => (
-            <TimelineRow key={b.id} b={b} showTime={i === 0 || active[i - 1].time !== b.time} settings={settings} />
+            <TimelineRow key={b.id} b={b} showTime={i === 0 || active[i - 1].time !== b.time} settings={settings} waAuto={waAuto} />
           ))}
         </ol>
       )}
@@ -300,7 +301,7 @@ function Timeline({ rows, service, isToday, settings }: { rows: Row[]; service: 
           {showLost && (
             <ol className="mt-2">
               {lost.map((b) => (
-                <TimelineRow key={b.id} b={b} showTime settings={settings} />
+                <TimelineRow key={b.id} b={b} showTime settings={settings} waAuto={waAuto} />
               ))}
             </ol>
           )}
@@ -310,7 +311,7 @@ function Timeline({ rows, service, isToday, settings }: { rows: Row[]; service: 
   );
 }
 
-function TimelineRow({ b, showTime, settings }: { b: Row; showTime: boolean; settings: Settings }) {
+function TimelineRow({ b, showTime, settings, waAuto }: { b: Row; showTime: boolean; settings: Settings; waAuto: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -353,13 +354,20 @@ function TimelineRow({ b, showTime, settings }: { b: Row; showTime: boolean; set
           <IconChevron dir={open ? "up" : "down"} className="h-5 w-5 shrink-0 text-cream/40" />
         </button>
 
-        {open && (
-          <div className="space-y-3 border-t border-white/[0.06] px-3 pb-3 pt-3 text-sm">
+        {/* notes and guest changes stay in view: no need to open the row */}
+        {(b.notes || (b.guest_change && !gone)) && (
+          <div className="px-3 pb-3">
+            {b.guest_change && !gone && <GuestChange b={b} />}
             {b.notes && (
-              <p className="flex items-start gap-2 italic text-gold-light">
-                <IconNote className="mt-0.5 h-4 w-4 shrink-0" /> “{b.notes}”
+              <p className="mt-2 flex items-start gap-2 rounded-lg bg-gold/10 px-3 py-2 text-[0.95rem] font-medium italic text-gold-light">
+                <IconNote className="mt-0.5 h-4 w-4 shrink-0 not-italic" /> <span className="min-w-0 break-words">“{b.notes}”</span>
               </p>
             )}
+          </div>
+        )}
+
+        {open && (
+          <div className="space-y-3 border-t border-white/[0.06] px-3 pb-3 pt-3 text-sm">
             <p className="text-cream/70">{b.history}</p>
             <p className="text-cream/50">
               {b.source === "web" ? "Dal sito" : "Telefonica"} · ricevuta {b.ago}
@@ -392,9 +400,23 @@ function TimelineRow({ b, showTime, settings }: { b: Row; showTime: boolean; set
                   <button type="button" onClick={() => setConfirming(false)} className="btn btn-line min-h-11 text-xs text-cream/85">
                     No
                   </button>
-                  <button type="button" disabled={busy} onClick={() => run(() => cancelBookingAction(b.id), "Prenotazione annullata")} className="btn min-h-11 bg-ember text-xs text-ink disabled:opacity-60">
-                    Sì, annulla
-                  </button>
+                  {waAuto ? (
+                    <button type="button" disabled={busy} onClick={() => run(() => cancelBookingAction(b.id), "Prenotazione annullata")} className="btn min-h-11 bg-ember text-xs text-ink disabled:opacity-60">
+                      {busy ? "Invio…" : "Sì, annulla e avvisa"}
+                    </button>
+                  ) : (
+                    // no automatic WhatsApp: the message opens already written, the staff taps send
+                    <a
+                      href={whatsappHref(b.phone, whatsappText("cancelled", b, settings))}
+                      target="_blank"
+                      rel="noopener"
+                      aria-disabled={busy}
+                      onClick={() => run(() => cancelBookingAction(b.id), "Prenotazione annullata · messaggio pronto su WhatsApp")}
+                      className="btn min-h-11 bg-ember text-xs text-ink"
+                    >
+                      <IconWhatsapp className="h-4 w-4" /> Annulla e avvisa
+                    </a>
+                  )}
                 </div>
               ) : (
                 <button type="button" onClick={() => setConfirming(true)} className="min-h-11 text-sm font-semibold text-ember underline underline-offset-4">

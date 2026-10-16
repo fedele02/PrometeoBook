@@ -210,12 +210,16 @@ function EditBooking({
 
   // free times for the chosen day and party size (the booking's own seats count as free)
   useEffect(() => {
-    startLoading(async () => setAvail(await getAvailability(date, people, token)));
+    startLoading(async () => {
+      const next = await getAvailability(date, people, token);
+      setAvail(next);
+      // the chosen time stays if it is still free for the new party size, otherwise ask again
+      setTime((t) => (t && !next.closed && next.services.some((svc) => svc.slots.some((sl) => sl.time === t && sl.free)) ? t : null));
+    });
   }, [date, people, token]);
 
   const pickPeople = (n: number) => {
     setPeople(n);
-    setTime(null);
   };
   const pickDate = (d: string) => {
     setDate(d);

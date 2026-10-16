@@ -8,6 +8,7 @@ import { telHref, whatsappHref } from "@/lib/site";
 import { capitalize, formatDateLong, serviceLabel } from "@/lib/time";
 import type { Booking, Settings, WhatsappKind } from "@/lib/types";
 import { IconCheck, IconNote, IconPhone, IconUser, IconWhatsapp } from "../Icons";
+import { GuestChange } from "./GuestChange";
 import { useToast } from "./ui";
 
 export type Request = Booking & { history: string; ago: string };
@@ -175,6 +176,7 @@ export function RequestCard({ b, settings, waAuto, showDate, fresh }: { b: Reque
       <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-gold-light">
         <IconUser className="mt-px h-4 w-4 shrink-0" /> {b.history}
       </p>
+      <GuestChange b={b} />
       {b.notes && (
         <p className="mt-2 flex items-start gap-2 text-[0.95rem] italic text-gold-light">
           <IconNote className="mt-1 h-4 w-4 shrink-0 not-italic" /> “{b.notes}”

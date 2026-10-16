@@ -42,10 +42,11 @@ export function Choice({
 export function MorePeople({ max, value, onPick }: { max: number; value: number | null; onPick: (n: number) => void }) {
   const [n, setN] = useState(value && value > 8 ? value : 9);
   const clamp = (v: number) => Math.min(max, Math.max(9, v));
+  const active = value !== null && value > 8;
   return (
     // label on its own line: the controls always fit, down to 320 px phones
-    <div className="mt-3 border border-ink/15 p-2.5">
-      <p className="px-1.5 pb-2 font-semibold">Più persone</p>
+    <div className={`mt-3 border p-2.5 ${active ? "border-ink bg-paper" : "border-ink/15"}`}>
+      <p className="px-1.5 pb-2 font-semibold">{active ? `Più persone · ${value} selezionate` : "Più persone"}</p>
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => setN(clamp(n - 1))} aria-label="Meno" className="grid h-12 w-12 shrink-0 place-items-center border border-ink/15">
           <IconMinus className="h-5 w-5" />

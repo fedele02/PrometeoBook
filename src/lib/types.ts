@@ -135,12 +135,19 @@ export type Booking = {
    * (missing only on a database where the 2026-10-18 migration hasn't run yet)
    */
   short_code?: string;
+  /**
+   * what the guest changed on their own, until the staff answers: the values from before the
+   * first change and when the last one happened (missing until the 2026-10-19 migration has run)
+   */
+  guest_change?: GuestChange | null;
 };
 
-export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token" | "short_code">;
+export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token" | "short_code" | "guest_change">;
 
 /** What a guest can change on their own booking. */
 export type BookingChange = Pick<Booking, "date" | "time" | "people" | "notes">;
+
+export type GuestChange = { at: string; before: BookingChange };
 
 /** Status of an online booking: confirmed at once (small party) or a request for the staff. */
 export type OnlineStatus = Extract<BookingStatus, "pending" | "confirmed">;

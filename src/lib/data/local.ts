@@ -148,14 +148,19 @@ export const localRepo: Repo = {
       const b = db.bookings.find((x) => x.id === id);
       if (!b) throw new Error("Prenotazione non trovata");
       if (taken(db, change.date, change.time, id) + change.people > maxCovers) throw new SlotFullError();
-      Object.assign(b, change, { status });
+      // keep the values from before the first change until the staff answers
+      const before = b.guest_change?.before ?? { date: b.date, time: b.time, people: b.people, notes: b.notes };
+      Object.assign(b, change, { status, guest_change: { at: new Date().toISOString(), before } });
       await write(db);
       return b;
     }),
   setBookingStatus: (id, status) =>
     mutate((db) => {
       const b = db.bookings.find((x) => x.id === id);
-      if (b) b.status = status;
+      if (b) {
+        b.status = status;
+        b.guest_change = null;
+      }
     }),
   deleteBooking: (id) => mutate((db) => void (db.bookings = db.bookings.filter((b) => b.id !== id))),
   async countBookingsByPhone(phone, sinceIso) {
