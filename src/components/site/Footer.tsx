@@ -71,7 +71,7 @@ export function Footer({ settings: s }: { settings: Settings }) {
       </div>
 
       <div className="mx-auto mt-10 flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 border-t border-line px-6 pt-6 text-sm text-muted md:mt-14 md:px-10">
-        <p className="w-full md:w-auto md:flex-1">© {new Date().getFullYear()} Prometeo Fine Dining · Matera</p>
+        <p className="w-full md:w-auto md:flex-1">© {new Date().getFullYear()} Prometeo Fine Dining · Matera{s.vatNumber && ` · P.IVA ${s.vatNumber}`}</p>
         {social.map((x) => (
           <a key={x.href} href={x.href} target="_blank" rel="noopener" className="py-2 hover:text-cream">
             {x.label}

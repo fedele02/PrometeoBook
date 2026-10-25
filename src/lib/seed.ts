@@ -30,6 +30,7 @@ export const seedSettings: Settings = {
   address: "Via Michele Torraca, 10",
   city: "75100 Matera",
   mapsUrl: "https://maps.google.com/?q=Prometeo+Fine+Dining+Via+Michele+Torraca+10+Matera",
+  vatNumber: "03471940738",
   phone: "+39 391 352 9286",
   phone2: "+39 333 744 7469",
   whatsapp: "",

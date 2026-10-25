@@ -200,6 +200,7 @@ scripts/               seed Supabase, immagini dell'app (make-app-assets.ts), co
 | Antipasti e prezzi | menu cartaceo; primi e prezzi da TheFork |
 | Descrizioni di tonno, cime di rapa, filetto, cannolo, sporcamuss, tagliatelle, capuntini, cuore di baccalà, polpo | testi dei post Facebook (leggermente accorciati) |
 | Telefoni ed email | pagina Facebook (sezione Informazioni) e locandina di Ferragosto |
+| Partita IVA (footer, modificabile da Gestione → Locale e orari → Contatti) | comunicata dal titolare; da confrontare con la visura camerale |
 | Voto 9,8/10 e 392 recensioni, km 0, tavoli all'aperto, cani ammessi, opzioni vegetariane | TheFork |
 | Estratti di recensioni (Annalisa P., Cosimo L., Rossana R.) | Tripadvisor, giugno–settembre 2026 — da verificare e aggiornare dall'admin |
 | Domande frequenti | risposte basate sui servizi indicati su TheFork e sul funzionamento del sito |

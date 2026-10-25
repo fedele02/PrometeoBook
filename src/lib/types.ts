@@ -57,6 +57,8 @@ export type Settings = {
   address: string;
   city: string;
   mapsUrl: string;
+  /** partita IVA, shown in the footer */
+  vatNumber: string;
   phone: string;
   phone2: string;
   whatsapp: string;

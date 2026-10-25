@@ -235,6 +235,9 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
             <FieldLabel label="Link Google Maps">
               <input value={s.mapsUrl} onChange={(e) => up({ mapsUrl: e.target.value })} className={smallInput} />
             </FieldLabel>
+            <FieldLabel label="Partita IVA" hint="Compare in fondo a ogni pagina">
+              <input inputMode="numeric" value={s.vatNumber} onChange={(e) => up({ vatNumber: e.target.value })} className={smallInput} placeholder="11 cifre" />
+            </FieldLabel>
             <FieldLabel label="Instagram (link)">
               <input value={s.instagram} onChange={(e) => up({ instagram: e.target.value })} className={smallInput} placeholder="https://instagram.com/…" />
             </FieldLabel>
