@@ -55,7 +55,9 @@ Body text never below 16 px on mobile; line length ≤ 70 characters.
 - **Button**: rectangular (radius 2 px), min-height 52 px, uppercase 13 px tracking .18em.
   `btn-gold` primary (one per view), `btn-line` secondary, `link-arrow` tertiary. Pressed: opacity .85.
 - **Navbar**: transparent over the hero photo, `ink/90 + blur` when scrolled; **no border, no gradient band**.
-- **Mobile bar**: Chiama + Prenota, fixed bottom with safe-area, appears after the hero.
+  "Is there a hero photo?" comes from CSS (`body:has([data-hero])`), never from the pathname:
+  a page that opens on a full-screen photo marks that section with `data-hero`.
+- **Mobile bar**: Chiama + Prenota, fixed bottom with safe-area, appears after the hero (same `data-hero` rule).
 - **Photos**: square corners, captions on a bottom scrim; hover zoom ≤ 1.03 inside an overflow mask (no layout shift).
 - **Callout** (from their posts): 1 px left rule, bold title, one line of text.
 - **Sheet / modal**: bottom sheet on phones, drag only from the handle.
