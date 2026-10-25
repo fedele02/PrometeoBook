@@ -20,7 +20,8 @@ export function Hero({ tagline, bookingEnabled, rating }: Props) {
   } = getImageProps({ ...common, src: "/img/sala-tavolo-1600.webp", width: 1072, height: 1339 });
 
   return (
-    <section className="relative flex h-[100svh] min-h-[540px] flex-col overflow-hidden bg-ink">
+    // data-hero: the header and the phone bar see the photo through CSS (see SiteHeader)
+    <section data-hero className="relative flex h-[100svh] min-h-[540px] flex-col overflow-hidden bg-ink">
       <picture className="absolute inset-0">
         <source media="(min-width: 768px)" srcSet={desktop} />
         <source srcSet={mobile} />

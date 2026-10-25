@@ -50,8 +50,11 @@ export function SiteHeader({
     document.documentElement.style.overflow = open ? "hidden" : "";
   }, [open]);
 
-  // transparent only on top of the home photo
-  const solid = scrolled || pathname !== "/" || open;
+  // Transparent only on top of the home photo. "Is there a photo?" is answered by CSS
+  // (body:has([data-hero])), not by the pathname: when Vercel regenerates the home in the
+  // background it renders it as "/index", and the class baked into that HTML would stay
+  // black, because React does not fix attribute mismatches while hydrating.
+  const solid = scrolled || open;
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
@@ -63,7 +66,9 @@ export function SiteHeader({
       )}
       <div
         className={`relative z-10 transition-colors duration-500 ${announcement ? "" : "pt-[env(safe-area-inset-top)]"} ${
-          !solid ? "bg-transparent" : pathname === "/" ? "bg-ink/90 backdrop-blur-md" : "bg-ink"
+          solid
+            ? "bg-ink [body:has([data-hero])_&]:bg-ink/90 [body:has([data-hero])_&]:backdrop-blur-md"
+            : "bg-ink [body:has([data-hero])_&]:bg-transparent"
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-20 md:px-10">

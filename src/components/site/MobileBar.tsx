@@ -23,12 +23,12 @@ export function MobileBar({ phone, bookingEnabled }: { phone: string; bookingEna
 
   // not on the booking page, nor on the menu (people may be reading it at the table)
   if (pathname.startsWith("/prenota") || pathname.startsWith("/menu") || (!bookingEnabled && !phone)) return null;
-  const show = pathname !== "/" || past;
 
   return (
     <div
+      // hidden over the home photo: decided by CSS, not by the pathname (see SiteHeader)
       className={`fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-ink pb-[env(safe-area-inset-bottom)] transition-transform duration-500 md:hidden ${
-        show ? "translate-y-0" : "translate-y-full"
+        past ? "translate-y-0" : "translate-y-0 [body:has([data-hero])_&]:translate-y-full"
       }`}
     >
       {phone && (
