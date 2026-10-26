@@ -8,6 +8,9 @@ export const isActive = (b: { status: BookingStatus }) => b.status === "pending"
 export const onlineStatus = (s: Settings, people: number): OnlineStatus =>
   people <= s.booking.autoConfirmUpTo ? "confirmed" : "pending";
 
+/** A booking with the birthday link always waits for the staff, whatever the party size. */
+export const birthdayStatus = (): OnlineStatus => "pending";
+
 /**
  * Guests already holding seats in each service (lunch, dinner) of a day,
  * from the guests per time (Repo.coversByTime).

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/gestore-prometeo-2026/actions";
 import { ADMIN_PATH } from "@/lib/pwa";
-import { IconBell, IconBug, IconCalendar, IconHome, IconInbox, IconLogout, IconMenu, IconStore, IconUser } from "../Icons";
+import { IconBell, IconBug, IconCalendar, IconHome, IconInbox, IconLogout, IconMenu, IconStore, IconTag, IconUser } from "../Icons";
 import { Emblem, Wordmark } from "../Logo";
 
 const ITEMS = [
@@ -33,6 +33,7 @@ export function AdminNav({ email, pending, showErrors }: { email: string; pendin
   const isActive = (href: string) => (href === ADMIN_PATH ? pathname === ADMIN_PATH : pathname.startsWith(href));
   const notifyActive = pathname.startsWith(`${ADMIN_PATH}/notifiche`);
   const errorsActive = pathname.startsWith(`${ADMIN_PATH}/errori`);
+  const promoActive = pathname.startsWith(`${ADMIN_PATH}/locale/promozioni`);
 
   return (
     <>
@@ -52,7 +53,7 @@ export function AdminNav({ email, pending, showErrors }: { email: string; pendin
               <Link
                 key={it.href}
                 href={it.href}
-                aria-current={on ? "page" : undefined}
+                aria-current={on && !(promoActive && it.href.endsWith("/locale")) ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-3 font-semibold transition-colors ${
                   on ? "bg-gold/15 text-gold-light" : "text-cream/70 hover:bg-white/5 hover:text-cream"
                 }`}
@@ -63,6 +64,16 @@ export function AdminNav({ email, pending, showErrors }: { email: string; pendin
               </Link>
             );
           })}
+          {/* sub-page of Locale: on phones it is reached from the Locale tab */}
+          <Link
+            href={`${ADMIN_PATH}/locale/promozioni`}
+            aria-current={promoActive ? "page" : undefined}
+            className={`ml-4 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+              promoActive ? "text-gold-light" : "text-cream/60 hover:bg-white/5 hover:text-cream"
+            }`}
+          >
+            <IconTag className="h-4 w-4" /> Promozioni
+          </Link>
           <Link
             href={`${ADMIN_PATH}/notifiche`}
             aria-current={notifyActive ? "page" : undefined}

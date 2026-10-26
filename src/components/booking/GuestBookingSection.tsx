@@ -1,9 +1,12 @@
+import { birthdayDatesFor } from "@/lib/birthday-booking";
 import { guestCanManage } from "@/lib/customers";
 import type { Booking, Settings } from "@/lib/types";
 import { ManageBooking } from "./ManageBooking";
 
 /** The guest's private page, at /p/<short code> (the link in the messages) and /prenotazione/<token>. */
-export function GuestBookingSection({ booking, settings }: { booking: Booking; settings: Settings }) {
+export async function GuestBookingSection({ booking, settings }: { booking: Booking; settings: Settings }) {
+  // a birthday booking can only move between the days of its link
+  const onlyDates = await birthdayDatesFor(booking, settings);
   return (
     <section className="min-h-dvh bg-paper px-4 pb-20 pt-[calc(var(--header-h,4rem)+2rem)] text-ink md:pt-[calc(var(--header-h,5rem)+3.5rem)]">
       <div className="mx-auto max-w-xl">
@@ -15,7 +18,18 @@ export function GuestBookingSection({ booking, settings }: { booking: Booking; s
           <ManageBooking
             token={booking.manage_token}
             settings={settings}
-            booking={{ date: booking.date, time: booking.time, people: booking.people, name: booking.name, phone: booking.phone, notes: booking.notes, status: booking.status }}
+            booking={{
+              date: booking.date,
+              time: booking.time,
+              people: booking.people,
+              name: booking.name,
+              phone: booking.phone,
+              notes: booking.notes,
+              status: booking.status,
+              promotion: booking.promotion ?? null,
+              birthdayOffer: booking.birthday_offer ?? null,
+            }}
+            onlyDates={onlyDates}
             canManage={guestCanManage(booking, settings)}
           />
         </div>

@@ -29,7 +29,8 @@ Rejected from the skill (and why):
 | Gold on light | `gold-deep` | `#94742e` | only large text / decoration on paper |
 | Booking surface | `paper` | `#f4efe6` | table linen, booking page only |
 | Error | `ember` | `#e0763a` | also “da confermare” in the staff app |
-| Success | `ok` | `#6fbf8b` | confirmed bookings, success notices |
+| Success | `ok` | `#6fbf8b` | confirmed bookings, success notices; discounts in the staff app (on ink) |
+| Discount on light | `ok-deep` | `#2b6e44` | “−20%” badges and promo callout on paper/white (5.3:1 on paper) |
 | Chat | `chat` | `#1f2c24` | WhatsApp message preview (staff app) |
 
 Rules: no gradients as decoration (only photo scrims); gold never used for long body text;
@@ -59,8 +60,19 @@ Body text never below 16 px on mobile; line length ≤ 70 characters.
   a page that opens on a full-screen photo marks that section with `data-hero`.
 - **Mobile bar**: Chiama + Prenota, fixed bottom with safe-area, appears after the hero (same `data-hero` rule).
 - **Photos**: square corners, captions on a bottom scrim; hover zoom ≤ 1.03 inside an overflow mask (no layout shift).
+- **Map** (“Dove siamo”): static dark OpenStreetMap image served by the site (`npm run assets:map`), gold pin drawn in the centre,
+  the whole picture links to Google Maps with a `btn-dark` “Apri in Google Maps” on a bottom scrim. Never a Google iframe (third-party cookies).
 - **Callout** (from their posts): 1 px left rule, bold title, one line of text.
 - **Sheet / modal**: bottom sheet on phones, drag only from the handle.
+- **Promotion (site)**: “−20%” (real minus sign) in `ok-deep`, 12 px bold, under the day number in the calendar and under the time in the slots
+  (`gold-light` when the choice is selected). Callout with `ok-deep` left rule on `paper` + tag icon: title “−20% · Name”, then hours and the
+  restaurant's conditions; shown before choosing a time (only promotions that win at least one time) and before confirming.
+- **Birthday (site)**: optional `fieldset` “Il tuo compleanno” (gift icon) after the notes: Giorno select (6.5rem) + Mese select, stacked below 360 px;
+  its own consent box (same style as the privacy box, never pre-ticked).
+- **Birthday link page** (`/auguri/<code>`): gift icon in `gold-deep`, Cinzel title “Buon compleanno, Nome”; the same booking wizard with
+  the day step as 2-column date chips (“il tuo compleanno” under the birthday; a closed birthday stays in the grid, disabled, labelled “chiuso”, with a line above explaining it), no promo badges or promo callouts, phone read-only,
+  and a callout with `gold-deep` left rule: “La tua offerta di compleanno”, the offer and its full terms (days, one booking, availability and confirmation, ID, not combinable, no cash). Under the title, one muted line with the offer and its days.
+  Staff app: `BirthdayChip` (“Compleanno”, `gold/15`) in the row and `BirthdayLine` (offer + “prima verificare un documento”) when open.
 
 ## Staff app “Prometeo Gestione” (`/gestore-prometeo-2026`)
 
@@ -90,7 +102,15 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
   (radius 8, gold border when open): source pill (server errors `ember/20`, browser `gold/15`, handled `white/8`), time,
   path in mono 12 px, message in 600; open = hint, key/value details in mono, stack in a scrolling `black/30` block.
   Filter chips by source; “Errore di prova” and “Svuota” (asks Sì/No in place) as line buttons.
+- **Promozioni** (`/locale/promozioni`, sub-page of Locale: link card on top of Locale, indented sidebar link on desktop, never a bottom tab):
+  month overview (best discount per day on `ok/15` cells), list cards (percent block `ok/15` 56×64, state pill In corso `ok` · In programma `gold` ·
+  Scaduta/Spenta `white/6`, toggle, Modifica + trash asking Sì/No in place), editor card with gold border: percent chips + custom value,
+  range calendar (first tap = start, second = end, gold edges, `gold/20` inside), weekday chips, “Tutto il giorno / Solo in certi orari”,
+  conditions, preview of the guest's callout on paper. Birthday card: toggle, offer IT/EN, days before, message preview on `chat`.
+  Staff rows show a `PromoChip` (“−20%”, `ok/15`) and, open, a `PromoLine` with name and conditions.
 - **Notifications**: no buttons, title “Evento · Nome”, body with guests/day/time; past visits never appear in notifications, only in the app.
+- **Site icon** (browser tab, Google results): `src/app/icon.svg`, gold emblem on an ink rounded square; PNG/ICO versions and the 512 px
+  `public/logo.png` are generated from it (`npm run assets:favicon`).
 - **App icon**: logo + “GESTIONE” in Cinzel on ink, full bleed (iOS/Android apply their own mask); maskable variant inside the 80 % safe zone;
   monochrome badge for the Android status bar; black launch screens for iPhone. Source: Penpot export in `design/app-icon/`.
 

@@ -7,13 +7,26 @@ import { cancelMyBooking, changeMyBooking, getAvailability, type Availability } 
 import { forgetBooking, rememberBooking } from "@/lib/guest-bookings";
 import { telHref } from "@/lib/site";
 import { capitalize, formatDateLong, romeNow } from "@/lib/time";
-import type { BookingStatus, Settings } from "@/lib/types";
+import type { AppliedPromotion, BookingStatus, Settings } from "@/lib/types";
 import { onlineStatus } from "@/lib/customers";
-import { IconCalendar, IconClock, IconPhone, IconUser, IconUsers, IconWhatsapp } from "../Icons";
+import { percentLabel, promotionFor } from "@/lib/promotions";
+import { IconCalendar, IconClock, IconGift, IconPhone, IconTag, IconUser, IconUsers, IconWhatsapp } from "../Icons";
 import { Calendar } from "./Calendar";
-import { Choice, ErrorBox, MorePeople, Slots, Title } from "./parts";
+import { Choice, ErrorBox, MorePeople, PromoNote, Slots, Title } from "./parts";
 
-type GuestBooking = { date: string; time: string; people: number; name: string; phone: string; notes: string; status: BookingStatus };
+type GuestBooking = {
+  date: string;
+  time: string;
+  people: number;
+  name: string;
+  phone: string;
+  notes: string;
+  status: BookingStatus;
+  /** discount saved when booked */
+  promotion: AppliedPromotion | null;
+  /** booked with the birthday link: the offer */
+  birthdayOffer: string | null;
+};
 
 const STATUS: Record<BookingStatus, { label: string; dot: string }> = {
   pending: { label: "In attesa di conferma", dot: "bg-ember" },
@@ -28,11 +41,14 @@ export function ManageBooking({
   token,
   settings,
   booking,
+  onlyDates,
   canManage,
 }: {
   token: string;
   settings: Settings;
   booking: GuestBooking;
+  /** birthday booking: the days it can be moved to */
+  onlyDates: string[] | null;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -54,6 +70,8 @@ export function ManageBooking({
     { icon: IconUsers, label: "Persone", value: guests(booking.people) },
     { icon: IconUser, label: "A nome di", value: booking.name },
     { icon: IconWhatsapp, label: "WhatsApp", value: booking.phone },
+    ...(booking.promotion ? [{ icon: IconTag, label: "Sconto", value: `${percentLabel(booking.promotion.percent)} · ${booking.promotion.name}` }] : []),
+    ...(booking.birthdayOffer ? [{ icon: IconGift, label: "Compleanno", value: capitalize(booking.birthdayOffer) }] : []),
   ];
 
   const cancel = () =>
@@ -72,6 +90,7 @@ export function ManageBooking({
         token={token}
         settings={settings}
         booking={booking}
+        onlyDates={onlyDates}
         onClose={(msg) => {
           setMode("view");
           if (msg) {
@@ -97,6 +116,18 @@ export function ManageBooking({
             <dd className="min-w-0 flex-1 break-words text-right font-semibold">{value}</dd>
           </div>
         ))}
+        {booking.birthdayOffer && (
+          <div className="py-3">
+            <dt className="text-ink/60">Per l&apos;offerta di compleanno</dt>
+            <dd className="mt-1">Mostra al personale un documento d&apos;identità con la data di nascita.</dd>
+          </div>
+        )}
+        {booking.promotion?.conditions && (
+          <div className="py-3">
+            <dt className="text-ink/60">Condizioni dello sconto</dt>
+            <dd className="mt-1 break-words">{booking.promotion.conditions}</dd>
+          </div>
+        )}
         {booking.notes && (
           <div className="py-3">
             <dt className="text-ink/60">Richieste particolari</dt>
@@ -190,11 +221,13 @@ function EditBooking({
   token,
   settings,
   booking,
+  onlyDates,
   onClose,
 }: {
   token: string;
   settings: Settings;
   booking: GuestBooking;
+  onlyDates: string[] | null;
   onClose: (message?: string) => void;
 }) {
   const [today] = useState(() => romeNow().date);
@@ -207,6 +240,11 @@ function EditBooking({
   const [loading, startLoading] = useTransition();
   const [saving, startSaving] = useTransition();
   const max = settings.booking.maxCoversPerService;
+  // same rule as the server: same date and time keep the discount promised, otherwise the new one (or none)
+  const sameSlot = date === booking.date && time === booking.time;
+  // a birthday booking keeps its offer and never takes a promotion
+  const nextPromo = !time || onlyDates ? null : sameSlot ? booking.promotion : promotionFor(settings, date, time);
+  const losesPromo = !!booking.promotion && !!time && !nextPromo;
 
   // free times for the chosen day and party size (the booking's own seats count as free)
   useEffect(() => {
@@ -251,7 +289,7 @@ function EditBooking({
     <div className="border border-ink/15 bg-white p-5 sm:p-7">
       <Title>Modifica la prenotazione</Title>
       <p className="mt-1 text-ink/60">
-        {onlineStatus(settings, people) === "confirmed"
+        {!onlyDates && onlineStatus(settings, people) === "confirmed"
           ? "La modifica è confermata subito, se c'è posto."
           : "Dopo la modifica il ristorante dovrà riconfermarla."}
       </p>
@@ -268,16 +306,34 @@ function EditBooking({
 
       <h3 className="mt-7 text-sm font-semibold uppercase tracking-[0.16em] text-ink/55">Giorno</h3>
       <div className="mt-2.5">
-        <Calendar settings={settings} today={today} value={date} onPick={pickDate} />
+        {onlyDates && <p className="mb-3 text-ink/60">La prenotazione del compleanno si può spostare solo in questi giorni.</p>}
+        <Calendar settings={settings} today={today} value={date} onPick={pickDate} only={onlyDates} />
       </div>
 
       <h3 className="mt-7 text-sm font-semibold uppercase tracking-[0.16em] text-ink/55">Orario · {capitalize(formatDateLong(date))}</h3>
-      <Slots avail={avail} loading={loading} time={time} onPick={setTime} onChangeDay={() => window.scrollTo({ top: 0, behavior: "smooth" })} phone={settings.phone} />
+      <Slots
+        avail={avail}
+        loading={loading}
+        time={time}
+        onPick={setTime}
+        onChangeDay={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        phone={settings.phone}
+        hidePromo={!!onlyDates}
+      />
 
       <label className="mt-7 block">
         <span className="text-sm font-semibold uppercase tracking-[0.16em] text-ink/55">Richieste particolari</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} rows={2} className="input input-paper mt-2.5 min-h-24 py-3" />
       </label>
+
+      {losesPromo && (
+        <p role="status" className="mt-6 border-l-2 border-ember bg-ember/10 px-4 py-3">
+          Con il nuovo giorno o orario lo sconto {percentLabel(booking.promotion!.percent)} non vale più.
+        </p>
+      )}
+      {nextPromo && !sameSlot && (
+        <PromoNote title={`Sconto ${percentLabel(nextPromo.percent)} con il nuovo orario`} lines={[nextPromo.name, nextPromo.conditions]} />
+      )}
 
       {error && <ErrorBox>{error}</ErrorBox>}
 

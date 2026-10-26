@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { saveSettingsAction } from "@/app/gestore-prometeo-2026/actions";
 import { WEEKDAYS, WEEK_ORDER, formatDateLong, romeNow } from "@/lib/time";
 import type { Settings } from "@/lib/types";
-import { IconPlus, IconTrash } from "../Icons";
+import { ADMIN_PATH } from "@/lib/pwa";
+import { IconChevron, IconPlus, IconTag, IconTrash } from "../Icons";
 import { Card, FieldLabel, PageTitle, Toggle, iconBtn, smallInput, useToast } from "./ui";
 
 /** What the server knows about the WhatsApp connection (YCloud env vars). */
@@ -67,6 +69,21 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
       )}
 
       <div className="space-y-5">
+        {/* promotions and birthdays have their own page, saved on their own */}
+        <Link
+          href={`${ADMIN_PATH}/locale/promozioni`}
+          className="flex items-center gap-4 rounded-lg border border-white/[0.07] bg-ink-2 p-5 transition-colors hover:border-gold/40 md:p-6"
+        >
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-ok/15 text-ok">
+            <IconTag className="h-6 w-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-lg tracking-[0.06em]">Promozioni e compleanni</span>
+            <span className="block text-sm text-cream/55">Sconti per periodo e orario, auguri di compleanno su WhatsApp</span>
+          </span>
+          <IconChevron className="h-5 w-5 shrink-0 text-cream/40" />
+        </Link>
+
         {/* ---------- announcement ---------- */}
         <Card>
           <Toggle
@@ -235,7 +252,7 @@ export function SettingsForm({ initial, whatsapp }: { initial: Settings; whatsap
             <FieldLabel label="Link Google Maps">
               <input value={s.mapsUrl} onChange={(e) => up({ mapsUrl: e.target.value })} className={smallInput} />
             </FieldLabel>
-            <FieldLabel label="Partita IVA" hint="Compare in fondo a ogni pagina">
+            <FieldLabel label="Partita IVA" hint="Compare in fondo a ogni pagina e nella Privacy">
               <input inputMode="numeric" value={s.vatNumber} onChange={(e) => up({ vatNumber: e.target.value })} className={smallInput} placeholder="11 cifre" />
             </FieldLabel>
             <FieldLabel label="Instagram (link)">

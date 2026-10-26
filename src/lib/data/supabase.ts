@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { seedSettings } from "../seed";
-import type { Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
+import type { BirthdayContact, Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
 import { createAdminClient } from "../supabase/admin";
 import { SlotFullError, type Repo } from "./repo";
 
@@ -32,7 +32,7 @@ export function supabaseRepo(): Repo {
       const res = await db.from("settings").select("data").eq("id", 1).maybeSingle();
       if (res.error) throw new Error(res.error.message);
       const s = (res.data?.data ?? {}) as Partial<Settings>;
-      return { ...seedSettings, ...s, booking: { ...seedSettings.booking, ...s.booking } };
+      return { ...seedSettings, ...s, booking: { ...seedSettings.booking, ...s.booking }, birthday: { ...seedSettings.birthday, ...s.birthday } };
     },
     async saveSettings(s) {
       check(await db.from("settings").upsert({ id: 1, data: s, updated_at: new Date().toISOString() }));
@@ -185,6 +185,27 @@ export function supabaseRepo(): Repo {
         out.push(...(check(res) as WhatsappMessage[]));
       }
       return out;
+    },
+
+    async listBirthdays() {
+      return check(await db.from("birthdays").select("*").order("birthday")) as BirthdayContact[];
+    },
+    async saveBirthday(c) {
+      check(await db.from("birthdays").upsert(c));
+    },
+    async getBirthdayByInvite(code) {
+      const res = await db.from("birthdays").select("*").eq("invite_code", code).maybeSingle();
+      if (res.error) throw new Error(res.error.message);
+      return (res.data as BirthdayContact | null) ?? null;
+    },
+    async updateBirthday(phoneKey, patch) {
+      check(await db.from("birthdays").update(patch).eq("phone_key", phoneKey));
+    },
+    async deleteBirthday(phoneKey) {
+      check(await db.from("birthdays").delete().eq("phone_key", phoneKey));
+    },
+    async deleteBirthdaysBefore(iso) {
+      check(await db.from("birthdays").delete().lt("consent_at", iso));
     },
 
     async saveErrorLog(e) {

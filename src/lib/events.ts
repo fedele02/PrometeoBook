@@ -6,7 +6,7 @@ import { logError } from "./errors";
 import { ADMIN_PATH } from "./pwa";
 import { DEVICE_COOKIE, pushToDevices, type PushPayload } from "./push";
 import { addDays, dateParts, romeNow, serviceLabel } from "./time";
-import type { Booking, BookingChange, NotifyPrefs } from "./types";
+import type { Booking, BookingDetails, NotifyPrefs } from "./types";
 
 /**
  * Everything that happens to a booking and is worth telling the staff.
@@ -17,7 +17,7 @@ export type BookingEvent =
   | { type: "requested"; booking: Booking }
   /** online booking of a small party, confirmed at once (Locale e orari → conferma automatica) */
   | { type: "autoConfirmed"; booking: Booking }
-  | { type: "changed"; booking: Booking; before: BookingChange }
+  | { type: "changed"; booking: Booking; before: BookingDetails }
   | { type: "cancelledByGuest"; booking: Booking }
   | { type: "accepted" | "declined" | "cancelledByStaff" | "phoneBooking"; booking: Booking };
 

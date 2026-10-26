@@ -315,14 +315,31 @@ export default async function HomePage() {
             </Reveal>
           </div>
 
-          <Reveal delay={100} className="-mx-6 md:mx-0">
-            <iframe
-              title="Mappa: Prometeo Fine Dining, Via Michele Torraca 10, Matera"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(`${s.address}, ${s.city}`)}&output=embed`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="h-80 w-full border-0 [filter:invert(.92)_hue-rotate(180deg)_grayscale(1)_contrast(.9)] md:h-full md:min-h-[32rem]"
-            />
+          {/* a picture served by the site, not a Google embed: no third-party cookies until the guest taps through */}
+          <Reveal delay={100} className="relative -mx-6 h-80 md:mx-0 md:h-full md:min-h-[32rem]">
+            <a href={s.mapsUrl} target="_blank" rel="noopener" className="group absolute inset-0 block overflow-hidden">
+              <Image
+                src="/img/mappa-z19.webp"
+                alt={`Mappa: ${s.name}, ${s.address}, ${s.city}`}
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-[filter] duration-300 group-hover:brightness-125"
+              />
+              <IconPin className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-full fill-ink text-gold drop-shadow-[0_2px_6px_rgb(0_0_0/0.6)]" />
+              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 to-transparent px-6 pb-6 pt-16 md:px-8 md:pb-8">
+                <span className="btn btn-dark whitespace-nowrap px-5 group-hover:bg-ink-3 md:px-7">
+                  Apri in Google Maps <IconArrow className="h-3.5 w-3.5 text-gold" />
+                </span>
+              </span>
+            </a>
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener"
+              className="absolute right-0 top-0 bg-ink/80 px-2 py-1 text-[0.7rem] text-cream/70 hover:text-gold"
+            >
+              © OpenStreetMap
+            </a>
           </Reveal>
         </div>
       </section>
@@ -355,7 +372,7 @@ function Photo({
   );
 }
 
-/** Structured data: restaurant info and the FAQ, so Google can show both. */
+/** Structured data: the site's name, restaurant info with its logo, and the FAQ, so Google can show them. */
 function JsonLd({ s }: { s: Settings }) {
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const restaurant = {
@@ -363,6 +380,8 @@ function JsonLd({ s }: { s: Settings }) {
     "@type": "Restaurant",
     name: `${s.name} ${s.subtitle}`,
     image: `${SITE_URL}/img/og-image.jpg`,
+    // square logo, 512 px (scripts/make-favicons.ts)
+    logo: `${SITE_URL}/logo.png`,
     url: SITE_URL,
     telephone: s.phone || undefined,
     email: s.email || undefined,
@@ -382,6 +401,8 @@ function JsonLd({ s }: { s: Settings }) {
       day.closed ? [] : day.services.map((x) => ({ "@type": "OpeningHoursSpecification", dayOfWeek: dayNames[i], opens: x.open, closes: x.close })),
     ),
   };
+  // the name Google shows above the result, next to the icon
+  const website = { "@context": "https://schema.org", "@type": "WebSite", name: `${s.name} ${s.subtitle}`, alternateName: s.name, url: `${SITE_URL}/` };
   const faq = s.faq.length
     ? {
         "@context": "https://schema.org",
@@ -389,5 +410,5 @@ function JsonLd({ s }: { s: Settings }) {
         mainEntity: s.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
       }
     : null;
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq ? [restaurant, faq] : restaurant) }} />;
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faq ? [website, restaurant, faq] : [website, restaurant]) }} />;
 }

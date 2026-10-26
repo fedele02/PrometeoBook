@@ -47,6 +47,35 @@ export const settingsSchema = z.object({
     whatsappAuto: z.boolean(),
   }),
   announcement: z.object({ enabled: z.boolean(), text: text(200) }),
+  promotions: z.array(z.lazy(() => promotionSchema)).max(50),
+  birthday: z.lazy(() => birthdaySchema),
+});
+
+export const promotionSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    name: text(60).min(1, "Dai un nome alla promozione"),
+    percent: z.number().int().min(1, "Lo sconto va da 1 a 90%").max(90, "Lo sconto va da 1 a 90%"),
+    from: ymd,
+    to: ymd,
+    weekdays: z.array(z.number().int().min(0).max(6)).max(7),
+    allDay: z.boolean(),
+    start: hhmm,
+    end: hhmm,
+    conditions: text(300),
+    enabled: z.boolean(),
+  })
+  .refine((p) => p.from <= p.to, { message: "Il primo giorno viene dopo l'ultimo", path: ["from"] })
+  .refine((p) => p.allDay || p.start <= p.end, { message: "L'ora di inizio viene dopo quella di fine", path: ["start"] });
+
+export const birthdaySchema = z.object({
+  enabled: z.boolean(),
+  daysBefore: z.number().int().min(0).max(30),
+  windowDays: z.number().int().min(0).max(14),
+  // together they are one template parameter: one line, cut at 300 characters (cleanParam)
+  // 60 each: the filled WhatsApp message must stay within Meta's 1024 characters
+  offerIt: text(60),
+  offerEn: text(60),
 });
 
 export const categorySchema = z.object({
@@ -103,6 +132,18 @@ const FIELD_NAMES: Record<string, string> = {
   closures: "Chiusure",
   booking: "Prenotazioni",
   announcement: "Avviso",
+  promotions: "Promozioni",
+  birthday: "Compleanni",
+  percent: "Sconto",
+  from: "Dal giorno",
+  to: "Al giorno",
+  start: "Dalle ore",
+  end: "Alle ore",
+  conditions: "Condizioni",
+  offerIt: "Offerta (italiano)",
+  offerEn: "Offerta (inglese)",
+  daysBefore: "Giorni prima",
+  windowDays: "Giorni intorno al compleanno",
   rating: "Voto",
   reviews: "Recensioni",
   faq: "Domande frequenti",

@@ -207,3 +207,18 @@ export const IconBug = (p: P) => (
     <path d="M12 12v7.5M3.5 13H7M17 13h3.5M4.5 8.5 7 10M19.5 8.5 17 10M4.5 18.5 7.2 16.5M19.5 18.5l-2.7-2" />
   </svg>
 );
+/** price tag: promotions and discounts */
+export const IconTag = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 12.2V4.5A1.5 1.5 0 0 1 4.5 3h7.7a1.5 1.5 0 0 1 1.06.44l7.3 7.3a1.5 1.5 0 0 1 0 2.12l-7.7 7.7a1.5 1.5 0 0 1-2.12 0l-7.3-7.3A1.5 1.5 0 0 1 3 12.2z" />
+    <circle cx="8" cy="8" r="1.5" />
+  </svg>
+);
+/** gift: birthday wishes */
+export const IconGift = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3.5" y="8" width="17" height="4" rx="1" />
+    <path d="M5 12v8.5h14V12M12 8v12.5" />
+    <path d="M12 8c-1.5-3.5-5.5-4-5.5-1.5S10 8 12 8zM12 8c1.5-3.5 5.5-4 5.5-1.5S14 8 12 8z" />
+  </svg>
+);

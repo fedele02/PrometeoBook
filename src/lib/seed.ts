@@ -100,6 +100,9 @@ export const seedSettings: Settings = {
     whatsappAuto: true,
   },
   announcement: { enabled: false, text: "" },
+  // set up by the restaurant in Gestione → Promozioni: no discount or offer is invented here
+  promotions: [],
+  birthday: { enabled: false, daysBefore: 7, windowDays: 2, offerIt: "", offerEn: "" },
 };
 
 export const seedCategories: Category[] = [

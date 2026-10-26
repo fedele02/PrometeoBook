@@ -10,10 +10,11 @@ import { login, logout, requireAdmin, requireDeveloper } from "@/lib/auth";
 import { CONTENT_TAG, repo } from "@/lib/data";
 import { announce, pendingCount } from "@/lib/events";
 import { DEFAULT_PREFS, DEVICE_COOKIE, pushToDevices } from "@/lib/push";
+import { promotionFor } from "@/lib/promotions";
 import { ADMIN_PATH } from "@/lib/pwa";
-import { adminBookingSchema, categorySchema, dishSchema, firstError, settingsSchema } from "@/lib/schemas";
-import type { DeclineReason } from "@/lib/messages";
-import type { Category, Dish, NotifyPrefs, PushDevice, Settings, WhatsappKind } from "@/lib/types";
+import { adminBookingSchema, birthdaySchema, categorySchema, dishSchema, firstError, settingsSchema } from "@/lib/schemas";
+import type { DeclineMessage } from "@/lib/messages";
+import type { BirthdaySettings, Category, Dish, NotifyPrefs, Promotion, PushDevice, Settings, WhatsappKind } from "@/lib/types";
 import { sendBookingWhatsapp, type WhatsappOutcome } from "@/lib/whatsapp";
 import { logError } from "@/lib/errors";
 
@@ -62,7 +63,7 @@ const KIND_OF: Record<"confirmed" | "declined" | "cancelled", { event: "accepted
   cancelled: { event: "cancelledByStaff", kind: "cancelled" },
 };
 
-async function answer(id: string, status: keyof typeof KIND_OF, reason?: DeclineReason): Promise<AnswerResult> {
+async function answer(id: string, status: keyof typeof KIND_OF, decline?: DeclineMessage): Promise<AnswerResult> {
   await requireAdmin();
   try {
     const r = repo();
@@ -73,7 +74,7 @@ async function answer(id: string, status: keyof typeof KIND_OF, reason?: Decline
     const booking = { ...b, status };
     const { event, kind } = KIND_OF[status];
     after(() => announce({ type: event, booking }));
-    const whatsapp = await sendBookingWhatsapp(kind, booking, s, { reason });
+    const whatsapp = await sendBookingWhatsapp(kind, booking, s, { decline });
     return { ok: true, whatsapp };
   } catch (e) {
     await logError(`Risposta alla prenotazione (${status}) non salvata`, e, { booking: id });
@@ -81,13 +82,13 @@ async function answer(id: string, status: keyof typeof KIND_OF, reason?: Decline
   }
 }
 
-const reasonSchema = z.enum(["full", "closed", "group", "custom"]);
+const declineSchema = z.enum(["standard", "custom"]);
 
 export async function acceptBookingAction(id: string) {
   return answer(id, "confirmed");
 }
-export async function declineBookingAction(id: string, reason: DeclineReason = "full") {
-  return answer(id, "declined", reasonSchema.catch("full").parse(reason));
+export async function declineBookingAction(id: string, decline: DeclineMessage = "standard") {
+  return answer(id, "declined", declineSchema.catch("standard").parse(decline));
 }
 export async function cancelBookingAction(id: string) {
   return answer(id, "cancelled");
@@ -105,7 +106,9 @@ export async function createBookingAction(input: unknown): Promise<AnswerResult>
   const { sendWhatsapp, ...data } = p.data;
   try {
     const r = repo();
-    const [booking, s] = await Promise.all([r.createBooking({ ...data, email: "", status: "confirmed", source: "admin" }, null), r.getSettings()]);
+    const s = await r.getSettings();
+    // phone bookings get the same discount as the site for that date and time
+    const booking = await r.createBooking({ ...data, email: "", status: "confirmed", source: "admin", promotion: promotionFor(s, data.date, data.time) }, null);
     after(() => announce({ type: "phoneBooking", booking }));
     const whatsapp = sendWhatsapp ? await sendBookingWhatsapp("confirmed", booking, s) : undefined;
     return { ok: true, whatsapp };
@@ -187,8 +190,32 @@ export async function saveSettingsAction(input: Settings): Promise<ActionResult>
   const s = p.data as Settings;
   s.closures.sort((a, b) => a.date.localeCompare(b.date));
   return guarded(async () => {
-    await repo().saveSettings(s);
+    const r = repo();
+    // promotions and birthdays are edited on their own page: never overwrite them from here
+    const current = await r.getSettings();
+    await r.saveSettings({ ...s, promotions: current.promotions, birthday: current.birthday });
     publish();
+  });
+}
+
+/** Gestione → Promozioni: the discounts and the birthday wishes, nothing else of the settings. */
+export async function savePromotionsAction(input: { promotions: Promotion[]; birthday: BirthdaySettings }): Promise<ActionResult> {
+  await requireAdmin();
+  const p = z.object({ promotions: settingsSchema.shape.promotions, birthday: birthdaySchema }).safeParse(input);
+  if (!p.success) return { ok: false, error: firstError(p.error) };
+  const promotions = [...p.data.promotions].sort((a, b) => a.from.localeCompare(b.from));
+  return guarded(async () => {
+    const r = repo();
+    await r.saveSettings({ ...(await r.getSettings()), promotions, birthday: p.data.birthday });
+    publish();
+  });
+}
+
+/** The guest no longer wants the birthday wishes (asked the staff): the date is deleted. */
+export async function removeBirthdayAction(phoneKey: string): Promise<ActionResult> {
+  return guarded(async () => {
+    await repo().deleteBirthday(z.string().regex(/^\d{4,15}$/).parse(phoneKey));
+    revalidatePath(`${ADMIN_PATH}/clienti`);
   });
 }
 

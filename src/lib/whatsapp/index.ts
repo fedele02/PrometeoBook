@@ -2,12 +2,15 @@ import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { repo } from "../data";
 import { logError } from "../errors";
-import { templateValues, WA_KIND_LABEL, type DeclineReason } from "../messages";
+import { BIRTHDAY_KEEP_MONTHS, birthdayTerms, dueOccurrence, inviteDates } from "../birthday";
+import { newShortCode } from "../short-code";
+import { phoneKey } from "../customers";
+import { birthdayOffer, birthdayPhone, birthdayTooLong, birthdayValues, templateValues, WA_KIND_LABEL, type DeclineMessage } from "../messages";
 import { ADMIN_PATH } from "../pwa";
 import { pushToDevices } from "../push";
-import { dateParts } from "../time";
+import { dateParts, romeNow } from "../time";
 import type { Booking, Settings, WhatsappKind, WhatsappMessage, WhatsappStatus } from "../types";
-import { sendComponents, TEMPLATES, WA_LANGUAGE } from "./templates";
+import { BIRTHDAY_TEMPLATE, sendComponents, TEMPLATES, WA_LANGUAGE } from "./templates";
 import { toE164, ycloud, type YcloudMessage } from "./ycloud";
 
 /*
@@ -50,9 +53,9 @@ function explain(code: string, message: string): string {
  * Sends one of the four messages for a booking and records it.
  * Returns quickly (YCloud's synchronous endpoint, 10 s timeout).
  */
-export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Settings, opts: { reason?: DeclineReason } = {}): Promise<WhatsappOutcome> {
+export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Settings, opts: { decline?: DeclineMessage } = {}): Promise<WhatsappOutcome> {
   if (!isWhatsappAuto(s)) return { sent: false, skipped: true, error: "Messaggi automatici non attivi" };
-  if (kind === "declined" && opts.reason === "custom") return { sent: false, skipped: true, error: "Messaggio scritto a mano" };
+  if (kind === "declined" && opts.decline === "custom") return { sent: false, skipped: true, error: "Messaggio scritto a mano" };
 
   const r = repo();
   const now = new Date().toISOString();
@@ -79,7 +82,7 @@ export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Set
       to,
       type: "template",
       externalId: record.id,
-      template: { name: def.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(def, templateValues(kind, b, s, opts.reason), b.short_code) },
+      template: { name: def.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(def, templateValues(kind, b, s), b.short_code) },
     },
   });
 
@@ -94,6 +97,79 @@ export async function sendBookingWhatsapp(kind: WhatsappKind, b: Booking, s: Set
   const error = status === "failed" ? explain(res.data.errorCode ?? "", res.data.errorMessage ?? "") : null;
   await save({ provider_id: res.data.id, status, error });
   return status === "failed" ? { sent: false, error: error! } : { sent: true, status };
+}
+
+/**
+ * Daily job (cron): birthday wishes to the guests who agreed, `daysBefore` days ahead,
+ * once per birthday, with the guest's own booking link (/auguri/<code>, created here: nothing
+ * shows in Gestione until the guest books with it). Off unless switched on with an offer and a
+ * phone written; without YCloud the link is still created and the staff sends the wishes by hand
+ * from Clienti → Compleanni in arrivo. Skipped when no day around the birthday can be booked
+ * any more. Also deletes consents older than 24 months. Returns how many were sent.
+ */
+export async function sendDueBirthdays(now = romeNow()): Promise<{ sent: number; failed: number }> {
+  const r = repo();
+  const out = { sent: 0, failed: 0 };
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - BIRTHDAY_KEEP_MONTHS);
+  await r.deleteBirthdaysBefore(cutoff.toISOString());
+
+  const s = await r.getSettings();
+  // the message tells guests to call: no phone in Locale e orari, no wishes
+  if (!s.birthday.enabled || !birthdayOffer(s.birthday) || !birthdayPhone(s)) return out;
+
+  for (const c of await r.listBirthdays()) {
+    const due = dueOccurrence(c.birthday, now.date, s.birthday.daysBefore, s.birthday.windowDays);
+    if (!due || c.last_sent_for === due) continue;
+
+    // this year's link: a new code for a new birthday, the same one if already created.
+    // Its promise (days, offer) is fixed now: later changes in Gestione apply to the next wishes only.
+    const same = c.invite_for === due;
+    let code = same ? c.invite_code : null;
+    let terms = same ? c.invite_terms : null;
+    if (!code || !terms) {
+      terms = birthdayTerms(s, due, now);
+      if (!terms.dates.length) continue; // no day around the birthday can be booked any more
+      const fresh = !code;
+      code ??= newShortCode();
+      try {
+        await r.updateBirthday(c.phone_key, { invite_code: code, invite_for: due, invite_terms: terms, ...(fresh ? { invite_booking_id: null } : {}) });
+      } catch (e) {
+        // e.g. the 2026-10-26 migration hasn't run: no link, so no wishes (the others still go)
+        out.failed++;
+        await logError("Link di compleanno non creato", e, { guest: c.phone_key });
+        continue;
+      }
+    }
+    if (!inviteDates(s, { invite_for: due, invite_terms: terms }, now).length) continue;
+    if (!isWhatsappConfigured()) continue;
+
+    // a very long name: the first name only, so the message fits Meta's limit
+    let values = birthdayValues(c.name, due, terms, s);
+    if (birthdayTooLong(values)) values = birthdayValues(c.name.trim().split(/\s+/)[0], due, terms, s);
+    const to = toE164(c.phone);
+    const res = birthdayTooLong(values)
+      ? ({ ok: false, code: "LENGTH", message: "Messaggio troppo lungo per WhatsApp: accorcia l'offerta in Gestione → Promozioni" } as const)
+      : to
+        ? await ycloud<YcloudMessage>(API_KEY, "/whatsapp/messages/sendDirectly", {
+            body: {
+              from: toE164(FROM),
+              to,
+              type: "template",
+              externalId: `birthday-${c.phone_key}-${due}`,
+              template: { name: BIRTHDAY_TEMPLATE.name, language: { code: WA_LANGUAGE, policy: "deterministic" }, components: sendComponents(BIRTHDAY_TEMPLATE, values, code) },
+            },
+          })
+        : ({ ok: false, code: "PHONE", message: "Numero di telefono non valido" } as const);
+    const error = !res.ok ? explain(res.code, res.message) : res.data.status === "failed" ? explain(res.data.errorCode ?? "", res.data.errorMessage ?? "") : null;
+    if (error) {
+      out.failed++;
+      await logError(`Auguri di compleanno non inviati: ${error}`, undefined, { guest: c.phone_key });
+    } else out.sent++;
+    // sent or not, never retried the same year: the staff sees the error in Clienti
+    await r.updateBirthday(c.phone_key, { last_sent_for: due, last_error: error });
+  }
+  return out;
 }
 
 /** For messages nobody is waiting on (e.g. "request received"): if it fails, tell the staff. */
@@ -152,14 +228,34 @@ export function verifySignature(header: string | null, rawBody: string, now = Da
 
 export const isWebhookConfigured = () => Boolean(WEBHOOK_SECRET);
 
-type YcloudEvent = { id?: string; type?: string; whatsappMessage?: YcloudMessage };
+type YcloudInbound = { from?: string; type?: string; text?: { body?: string }; button?: { text?: string; payload?: string } };
+type YcloudEvent = { id?: string; type?: string; whatsappMessage?: YcloudMessage; whatsappInboundMessage?: YcloudInbound };
 
-/** Applies a status update from YCloud; tells the staff when a message could not be delivered. */
+/** A guest's reply that means "no more birthday wishes". */
+const isStop = (text: string) => /^\s*(stop|basta|cancellami|unsubscribe)\b/i.test(text);
+
+/**
+ * Applies a status update from YCloud and tells the staff when a message could not
+ * be delivered. A guest answering STOP is removed from the birthday wishes.
+ */
 export async function handleWebhookEvent(event: YcloudEvent) {
+  if (event.type === "whatsapp.inbound_message.received" && event.whatsappInboundMessage) {
+    const m = event.whatsappInboundMessage;
+    const text = m.text?.body ?? m.button?.text ?? m.button?.payload ?? "";
+    if (m.from && isStop(text)) await repo().deleteBirthday(phoneKey(m.from));
+    return;
+  }
   if (event.type !== "whatsapp.message.updated" || !event.whatsappMessage) return;
   const m = event.whatsappMessage;
   const status = normalize(m.status);
   const r = repo();
+
+  // birthday wishes are not booking messages: only a late failure is worth keeping (shown in Clienti)
+  const wish = m.externalId?.match(/^birthday-(\d+)-(\d{4}-\d{2}-\d{2})$/);
+  if (wish) {
+    if (status === "failed") await r.updateBirthday(wish[1], { last_sent_for: wish[2], last_error: explain(m.errorCode ?? "", m.errorMessage ?? "") });
+    return;
+  }
 
   const match = m.externalId ? { id: m.externalId } : m.id ? { providerId: m.id } : null;
   if (!match) return;

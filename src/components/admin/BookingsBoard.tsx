@@ -13,6 +13,7 @@ import type { Booking, Settings, WhatsappMessage } from "@/lib/types";
 import { WA_KIND_LABEL, WA_STATUS_LABEL, whatsappText } from "@/lib/messages";
 import { IconCalendar, IconChevron, IconNote, IconPhone, IconPlus, IconUsers, IconWhatsapp } from "../Icons";
 import { GuestChange } from "./GuestChange";
+import { BirthdayChip, BirthdayLine, PromoChip, PromoLine } from "./PromoLine";
 import { PhoneBookingModal } from "./PhoneBookingModal";
 import { RequestCard } from "./RequestCard";
 import { STATUS } from "./status";
@@ -348,6 +349,8 @@ function TimelineRow({ b, showTime, settings, waAuto }: { b: Row; showTime: bool
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.cls}`}>{st.label}</span>
               {b.visits > 0 && <span className="text-xs font-semibold text-gold-light">{b.visits + 1}ª visita</span>}
               {b.source === "admin" && <span className="text-xs text-cream/50">telefonica</span>}
+              {b.promotion && <PromoChip p={b.promotion} />}
+              {b.birthday_offer && <BirthdayChip />}
               {waFailed && <span className="rounded-full bg-ember/20 px-2.5 py-0.5 text-xs font-semibold text-ember">WhatsApp non inviato</span>}
             </span>
           </span>
@@ -368,6 +371,8 @@ function TimelineRow({ b, showTime, settings, waAuto }: { b: Row; showTime: bool
 
         {open && (
           <div className="space-y-3 border-t border-white/[0.06] px-3 pb-3 pt-3 text-sm">
+            {b.promotion && <PromoLine p={b.promotion} />}
+            {b.birthday_offer && <BirthdayLine offer={b.birthday_offer} />}
             <p className="text-cream/70">{b.history}</p>
             <p className="text-cream/50">
               {b.source === "web" ? "Dal sito" : "Telefonica"} · ricevuta {b.ago}

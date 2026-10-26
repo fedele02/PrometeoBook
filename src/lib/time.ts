@@ -50,6 +50,9 @@ const fMonthYear = fmt({ month: "long", year: "numeric" });
 
 /** "sabato 11 ottobre" */
 export const formatDateLong = (d: string) => fLong.format(asDate(d));
+const fLongEn = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" });
+/** "Saturday 11 October" (for the messages to guests, which are in Italian and English) */
+export const formatDateLongEn = (d: string) => fLongEn.format(asDate(d));
 /** { wd: "sab", day: 11, month: "ott" } */
 export const dateParts = (d: string) => ({
   wd: fShortWd.format(asDate(d)).replace(".", ""),

@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { acceptBookingAction, declineBookingAction, type AnswerResult } from "@/app/gestore-prometeo-2026/actions";
-import { customStart, DECLINE_REASONS, whatsappText, type DeclineReason } from "@/lib/messages";
+import { customStart, DECLINE_MESSAGES, whatsappText, type DeclineMessage } from "@/lib/messages";
 import { telHref, whatsappHref } from "@/lib/site";
 import { capitalize, formatDateLong, serviceLabel } from "@/lib/time";
 import type { Booking, Settings, WhatsappKind } from "@/lib/types";
 import { IconCheck, IconNote, IconPhone, IconUser, IconWhatsapp } from "../Icons";
 import { GuestChange } from "./GuestChange";
+import { BirthdayLine, PromoLine } from "./PromoLine";
 import { useToast } from "./ui";
 
 export type Request = Booking & { history: string; ago: string };
@@ -27,14 +28,14 @@ export function RequestCard({ b, settings, waAuto, showDate, fresh }: { b: Reque
   const toast = useToast();
   const [busy, start] = useTransition();
   const [declining, setDeclining] = useState(false);
-  const [reason, setReason] = useState<DeclineReason>("full");
+  const [message, setMessage] = useState<DeclineMessage>("standard");
   const [custom, setCustom] = useState(() => customStart(b));
   // an automatic message that did not go out: offer to send it by hand
   const [failed, setFailed] = useState<{ kind: WhatsappKind; text: string; error: string; title: string } | null>(null);
 
   const when = `${showDate ? `${capitalize(formatDateLong(b.date))} · ` : ""}ore ${b.time} · ${serviceLabel(b.time)}`;
-  const autoDecline = waAuto && reason !== "custom";
-  const declineText = reason === "custom" ? custom : whatsappText("declined", b, settings, reason);
+  const autoDecline = waAuto && message !== "custom";
+  const declineText = message === "custom" ? custom : whatsappText("declined", b, settings);
 
   const run = (action: () => Promise<AnswerResult>, kind: WhatsappKind, done: { auto: string; manual: string; title: string }, text: string) =>
     start(async () => {
@@ -52,7 +53,7 @@ export function RequestCard({ b, settings, waAuto, showDate, fresh }: { b: Reque
   const accept = () =>
     run(() => acceptBookingAction(b.id), "confirmed", { auto: "Accettata · conferma inviata su WhatsApp", manual: "Accettata · messaggio pronto su WhatsApp", title: "Accettata" }, whatsappText("confirmed", b, settings));
   const decline = () =>
-    run(() => declineBookingAction(b.id, reason), "declined", { auto: "Rifiutata · messaggio inviato su WhatsApp", manual: "Rifiutata · messaggio pronto su WhatsApp", title: "Rifiutata" }, declineText);
+    run(() => declineBookingAction(b.id, message), "declined", { auto: "Rifiutata · messaggio inviato su WhatsApp", manual: "Rifiutata · messaggio pronto su WhatsApp", title: "Rifiutata" }, declineText);
 
   if (failed)
     return (
@@ -92,17 +93,17 @@ export function RequestCard({ b, settings, waAuto, showDate, fresh }: { b: Reque
         </p>
 
         <div className="mt-5 border-t border-white/[0.08] pt-5">
-          <h4 className="font-display text-[1.05rem] tracking-[0.04em]">Perché non puoi accettarla?</h4>
-          <div role="radiogroup" aria-label="Motivo" className="mt-3 grid gap-2">
-            {DECLINE_REASONS.map((r) => {
-              const on = reason === r.id;
+          <h4 className="font-display text-[1.05rem] tracking-[0.04em]">Quale messaggio inviare?</h4>
+          <div role="radiogroup" aria-label="Messaggio" className="mt-3 grid gap-2">
+            {DECLINE_MESSAGES.map((r) => {
+              const on = message === r.id;
               return (
                 <button
                   key={r.id}
                   type="button"
                   role="radio"
                   aria-checked={on}
-                  onClick={() => setReason(r.id)}
+                  onClick={() => setMessage(r.id)}
                   className={`flex min-h-12 items-center gap-3 rounded-xl border px-4 text-left transition-colors ${
                     on ? "border-ember/70 bg-ember/15 font-semibold" : "border-white/10 bg-white/[0.04] text-cream/80 hover:border-white/25"
                   }`}
@@ -116,7 +117,7 @@ export function RequestCard({ b, settings, waAuto, showDate, fresh }: { b: Reque
             })}
           </div>
 
-          {reason === "custom" ? (
+          {message === "custom" ? (
             <label className="mt-5 block">
               <span className={`${label} text-gold`}>Messaggio WhatsApp</span>
               <textarea
@@ -177,6 +178,8 @@ export function RequestCard({ b, settings, waAuto, showDate, fresh }: { b: Reque
         <IconUser className="mt-px h-4 w-4 shrink-0" /> {b.history}
       </p>
       <GuestChange b={b} />
+      {b.promotion && <PromoLine p={b.promotion} />}
+      {b.birthday_offer && <BirthdayLine offer={b.birthday_offer} />}
       {b.notes && (
         <p className="mt-2 flex items-start gap-2 text-[0.95rem] italic text-gold-light">
           <IconNote className="mt-1 h-4 w-4 shrink-0 not-italic" /> “{b.notes}”

@@ -19,6 +19,7 @@
   --color-line: rgb(255 255 255 / 0.12);
   --color-ember: #e0763a;
   --color-ok: #6fbf8b;
+  --color-ok-deep: #2b6e44; /* discounts on paper/white: 5.3:1 on paper */
   --color-chat: #1f2c24; /* WhatsApp message preview */
 
   --font-display: var(--font-cinzel), "Trajan Pro", Georgia, serif;

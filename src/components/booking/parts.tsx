@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Availability } from "@/app/(site)/prenota/actions";
 import { telHref } from "@/lib/site";
-import { IconMinus, IconPhone, IconPlus } from "../Icons";
+import { percentLabel } from "@/lib/promotions";
+import { IconMinus, IconPhone, IconPlus, IconTag } from "../Icons";
 
 /* Building blocks shared by the booking wizard and the guest's own booking page. */
 
@@ -81,6 +82,7 @@ export function Slots({
   onPick,
   onChangeDay,
   phone,
+  hidePromo,
 }: {
   avail: Availability | null;
   loading: boolean;
@@ -88,6 +90,8 @@ export function Slots({
   onPick: (t: string) => void;
   onChangeDay: () => void;
   phone: string;
+  /** birthday link: promotions don't apply, so no discount badges */
+  hidePromo?: boolean;
 }) {
   if (loading || !avail)
     return (
@@ -128,14 +132,45 @@ export function Slots({
           ) : (
             <div className="mt-2.5 grid grid-cols-3 gap-2.5">
               {svc.slots.map((s) => (
-                <Choice key={s.time} disabled={!s.free} selected={time === s.time} onClick={() => onPick(s.time)} className="h-14 flex-col text-lg">
+                <Choice key={s.time} disabled={!s.free} selected={time === s.time} onClick={() => onPick(s.time)} className="h-14 flex-col text-lg leading-tight">
                   {s.time}
+                  {s.promo > 0 && !hidePromo && <PromoBadge percent={s.promo} inverted={time === s.time} />}
                 </Choice>
               ))}
             </div>
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+/** "−20%" on a time or a calendar day. `inverted`: on a selected (dark) choice. */
+export function PromoBadge({ percent, inverted }: { percent: number; inverted?: boolean }) {
+  return (
+    <span className={`mt-0.5 px-1 text-[0.75rem] font-bold leading-none tracking-normal ${inverted ? "text-gold-light" : "text-ok-deep"}`}>
+      <span className="sr-only">sconto </span>
+      {percentLabel(percent)}
+    </span>
+  );
+}
+
+/**
+ * The discount, before the guest books: name, hours and conditions written by the
+ * restaurant. Callout of the design system (left rule, bold title).
+ */
+export function PromoNote({ title, lines }: { title: string; lines: string[] }) {
+  return (
+    <div className="mt-5 flex gap-3 border-l-2 border-ok-deep bg-paper px-4 py-3.5">
+      <IconTag className="mt-0.5 h-5 w-5 shrink-0 text-ok-deep" />
+      <div className="min-w-0">
+        <p className="font-semibold">{title}</p>
+        {lines.filter(Boolean).map((l) => (
+          <p key={l} className="mt-0.5 text-ink/75">
+            {l}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }

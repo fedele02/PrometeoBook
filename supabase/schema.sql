@@ -75,7 +75,11 @@ create table if not exists public.bookings (
   short_code  text not null default public.gen_short_code() unique,
   -- what the guest changed on their own, until the staff answers:
   -- {"at": <timestamp of the last change>, "before": {date, time, people, notes}}
-  guest_change jsonb
+  guest_change jsonb,
+  -- discount of the promotion valid when booked: {"id","name","percent","conditions"}
+  promotion   jsonb,
+  -- booked with the birthday link: the offer promised in the wishes (promotions don't apply)
+  birthday_offer text check (char_length(birthday_offer) <= 300)
 );
 create index if not exists bookings_date_idx on public.bookings (date, time);
 create index if not exists bookings_phone_idx on public.bookings (phone, created_at);
@@ -119,6 +123,26 @@ create table if not exists public.error_logs (
 );
 create index if not exists error_logs_created_idx on public.error_logs (created_at desc);
 
+-- Guests who agreed to the WhatsApp birthday wishes: one per phone number,
+-- only day and month, with the consent text and date (deleted after 24 months).
+create table if not exists public.birthdays (
+  phone_key     text primary key,
+  phone         text not null check (char_length(phone) between 6 and 25),
+  name          text not null check (char_length(name) between 2 and 80),
+  birthday      text not null check (birthday ~ '^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'),
+  consent_text  text not null,
+  consent_at    timestamptz not null default now(),
+  last_sent_for date,
+  last_error    text,
+  -- this year's booking link /auguri/<invite_code>, the birthday it is for, the booking made with it
+  invite_code   text unique,
+  invite_for    date,
+  invite_booking_id uuid references public.bookings(id) on delete set null,
+  -- what the wishes promised (days of the link, offer IT/EN), fixed when they are sent
+  invite_terms  jsonb
+);
+create index if not exists birthdays_birthday_idx on public.birthdays (birthday);
+
 create table if not exists public.admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
@@ -136,6 +160,7 @@ alter table public.admins     enable row level security;
 alter table public.push_devices enable row level security;
 alter table public.whatsapp_messages enable row level security;
 alter table public.error_logs enable row level security;
+alter table public.birthdays  enable row level security;
 
 drop policy if exists "public read settings" on public.settings;
 create policy "public read settings" on public.settings for select using (true);
@@ -149,7 +174,7 @@ create policy "public read dishes" on public.dishes for select using (visible);
 drop policy if exists "admin reads own row" on public.admins;
 create policy "admin reads own row" on public.admins for select to authenticated using (user_id = auth.uid());
 
--- bookings, push_devices, whatsapp_messages, error_logs: no policies → nobody but the server (secret key) can touch them.
+-- bookings, push_devices, whatsapp_messages, error_logs, birthdays: no policies → nobody but the server (secret key) can touch them.
 
 -- ---------- atomic booking (seats per service: lunch before 17:00, dinner from 17:00) ----
 
@@ -177,9 +202,11 @@ begin
     end if;
   end if;
 
-  insert into public.bookings (date, time, people, name, phone, email, notes, status, source)
+  insert into public.bookings (date, time, people, name, phone, email, notes, status, source, promotion, birthday_offer)
   values (v_date, v_time, v_people, p->>'name', p->>'phone', coalesce(p->>'email',''),
-          coalesce(p->>'notes',''), coalesce(p->>'status','pending'), coalesce(p->>'source','web'))
+          coalesce(p->>'notes',''), coalesce(p->>'status','pending'), coalesce(p->>'source','web'),
+          case when jsonb_typeof(p->'promotion') = 'object' then p->'promotion' end,
+          nullif(p->>'birthday_offer', ''))
   returning * into v_row;
 
   return v_row;
@@ -217,6 +244,8 @@ begin
      set date = v_date, time = v_time, people = v_people,
          notes = coalesce(p->>'notes', ''),
          status = case when p->>'status' in ('pending','confirmed') then p->>'status' else 'pending' end,
+         -- the discount follows the new date and time (decided by the server)
+         promotion = case when jsonb_typeof(p->'promotion') = 'object' then p->'promotion' end,
          -- keep the values from before the first change until the staff answers
          guest_change = jsonb_build_object(
            'at', now(),

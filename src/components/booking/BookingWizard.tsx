@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState, useTransition } from "react";
-import { getAvailability, submitBooking, type Availability } from "@/app/(site)/prenota/actions";
+import { getAvailability, submitBirthdayBooking, submitBooking, type Availability } from "@/app/(site)/prenota/actions";
 import { telHref } from "@/lib/site";
 import { addDays, capitalize, dateParts, dayState, formatDateLong, romeNow } from "@/lib/time";
-import type { OnlineStatus, Settings } from "@/lib/types";
+import type { AppliedPromotion, OnlineStatus, Settings } from "@/lib/types";
 import { onlineStatus } from "@/lib/customers";
-import { IconCalendar, IconCheck, IconClock, IconUser, IconUsers, IconWhatsapp } from "../Icons";
+import { BIRTHDAY_CONSENT, birthdayKey, daysInMonth, MONTHS } from "@/lib/birthday";
+import { hoursLabel, percentLabel, promotionFor, promotionsOn } from "@/lib/promotions";
+import { IconCalendar, IconCheck, IconClock, IconGift, IconTag, IconUser, IconUsers, IconWhatsapp } from "../Icons";
 import { Calendar } from "./Calendar";
-import { Choice, ErrorBox, Field, MorePeople, Slots, Title } from "./parts";
+import { Choice, ErrorBox, Field, MorePeople, PromoNote, Slots, Title } from "./parts";
 import { downloadIcs } from "./ics";
 import { rememberBooking } from "@/lib/guest-bookings";
 
@@ -33,8 +35,15 @@ const shortDate = (d: string) => {
   return `${p.wd} ${p.day} ${p.month}`;
 };
 
-/** `whatsappAuto`: the guest gets an automatic "request received" message on WhatsApp. */
-export function BookingWizard({ settings, whatsappAuto = false }: { settings: Settings; whatsappAuto?: boolean }) {
+/**
+ * The guest's birthday link (/auguri/<code>): only the link's days, the number the wishes
+ * went to, the birthday offer instead of any promotion.
+ */
+/** `validity`: the days the offer was promised for, written out ("dal 31 ottobre al 4 novembre") */
+export type BirthdayLinkProps = { code: string; birthday: string; dates: string[]; name: string; phone: string; offer: string; validity: string };
+
+/** `whatsappAuto`: the guest gets an automatic "request received" message on WhatsApp. `birthday`: booking with the birthday link. */
+export function BookingWizard({ settings, whatsappAuto = false, birthday }: { settings: Settings; whatsappAuto?: boolean; birthday?: BirthdayLinkProps }) {
   // any party can book online, up to a whole service; above the auto-confirm size it's a request
   const max = settings.booking.maxCoversPerService;
   const [step, setStep] = useState<Step>(0);
@@ -46,20 +55,27 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
   const [people, setPeople] = useState<number | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
-  const [name, setName] = useState(() => savedGuest().name);
-  const [phone, setPhone] = useState(() => savedGuest().phone);
+  const [name, setName] = useState(() => birthday?.name ?? savedGuest().name);
+  const [phone, setPhone] = useState(() => birthday?.phone ?? savedGuest().phone);
   const [notes, setNotes] = useState("");
   const [privacy, setPrivacy] = useState(false);
+  // birthday wishes: optional, day and month only, with their own consent
+  const [bdDay, setBdDay] = useState(0);
+  const [bdMonth, setBdMonth] = useState(0);
+  const [bdConsent, setBdConsent] = useState(false);
   const [hp, setHp] = useState("");
-  // small parties are confirmed at once: the button and its note say so
-  const instant = people !== null && onlineStatus(settings, people) === "confirmed";
+  // small parties are confirmed at once (never with the birthday link): the button and its note say so
+  const instant = !birthday && people !== null && onlineStatus(settings, people) === "confirmed";
+  // birthday link: a birthday still ahead on a closing day stays in the grid, disabled, with a line saying why
+  const birthdayClosed = !!birthday && birthday.birthday >= today && dayState(settings, birthday.birthday).closed;
 
   const [avail, setAvail] = useState<Availability | null>(null);
   const [error, setError] = useState<{ msg: string; field?: string } | null>(null);
   // private link token of the request just sent ("" when dropped as spam)
   const [done, setDone] = useState<string | null>(null);
-  // confirmed at once (small party) or a request for the staff
+  // confirmed at once (small party) or a request for the staff, and the discount saved on it
   const [doneStatus, setDoneStatus] = useState<OnlineStatus>("pending");
+  const [donePromo, setDonePromo] = useState<AppliedPromotion | null>(null);
   const [pending, startTransition] = useTransition();
   const top = useRef<HTMLDivElement>(null);
 
@@ -96,16 +112,25 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
     e.preventDefault();
     if (name.trim().length < 2) return setError({ msg: "Scrivi il tuo nome, per favore.", field: "name" });
     if (phone.replace(/\D/g, "").length < 6) return setError({ msg: "Scrivi un numero di telefono valido.", field: "phone" });
+    const bdKey = !birthday && settings.birthday.enabled && bdDay && bdMonth ? (birthdayKey(bdDay, bdMonth) ?? "") : "";
+    if (!birthday && settings.birthday.enabled) {
+      if (bdConsent && !bdKey) return setError({ msg: "Scegli giorno e mese del tuo compleanno.", field: "birthday" });
+      if (bdKey && !bdConsent)
+        return setError({ msg: "Per ricevere l'offerta di compleanno spunta la casella, oppure lascia vuota la data.", field: "birthdayConsent" });
+    }
     if (!privacy) return setError({ msg: "Spunta la casella del consenso per continuare.", field: "privacy" });
     setError(null);
     startTransition(async () => {
-      const res = await submitBooking({ date: date!, time: time!, people: people!, name, phone, notes, privacy: true, website: hp });
+      const res = birthday
+        ? await submitBirthdayBooking(birthday.code, { date: date!, time: time!, people: people!, name, notes, privacy: true, website: hp })
+        : await submitBooking({ date: date!, time: time!, people: people!, name, phone, notes, privacy: true, birthday: bdKey, birthdayConsent: !!bdKey && bdConsent, website: hp });
       if (res.ok) {
         try {
           localStorage.setItem(SAVED, JSON.stringify({ name, phone }));
         } catch {}
         if (res.token) rememberBooking({ token: res.token, date: date!, time: time!, people: people! });
         setDoneStatus(res.status);
+        setDonePromo(res.promotion);
         setDone(res.token);
         top.current?.scrollIntoView({ behavior: "smooth" });
       } else if (res.slotFull) {
@@ -122,16 +147,22 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
       <Done
         token={done}
         status={doneStatus}
+        promotion={donePromo}
+        birthdayOffer={birthday?.offer ?? null}
         settings={settings}
         whatsappAuto={whatsappAuto}
         summary={{ date: date!, time: time!, people: people!, name: name.trim(), phone: phone.trim(), notes: notes.trim() }}
-        onAgain={() => {
-          setDone(null);
-          setTime(null);
-          setDate(null);
-          setPeople(null);
-          setStep(0);
-        }}
+        onAgain={
+          birthday
+            ? null
+            : () => {
+                setDone(null);
+                setTime(null);
+                setDate(null);
+                setPeople(null);
+                setStep(0);
+              }
+        }
       />
     );
 
@@ -191,7 +222,34 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
               </>
             )}
 
-            {step === 1 && (
+            {step === 1 && birthday && (
+              <>
+                <Title>Quale giorno?</Title>
+                {birthdayClosed ? (
+                  <p className="mt-1 text-ink/60">
+                    {capitalize(formatDateLong(birthday.birthday))}, il giorno del tuo compleanno, il ristorante è chiuso: puoi festeggiare con noi
+                    in uno di questi giorni.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-ink/60">Con il tuo link di compleanno puoi prenotare in questi giorni.</p>
+                )}
+                <div className="mt-5 grid grid-cols-2 gap-2.5">
+                  {[...new Set([...birthday.dates, ...(birthdayClosed ? [birthday.birthday] : [])])].sort().map((d) => {
+                    const open = birthday.dates.includes(d);
+                    return (
+                      <Choice key={d} disabled={!open} selected={date === d} onClick={() => pickDate(d)} className="flex-col py-4">
+                        <span className="text-lg">{capitalize(shortDate(d))}</span>
+                        <span className="text-sm font-medium opacity-70">
+                          {d === birthday.birthday ? (open ? "il tuo compleanno" : "chiuso") : "\u00a0"}
+                        </span>
+                      </Choice>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {step === 1 && !birthday && (
               <>
                 <Title>Quale giorno?</Title>
                 <div className="mt-5 grid grid-cols-2 gap-2.5">
@@ -216,8 +274,12 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
               <>
                 <Title>A che ora?</Title>
                 <p className="mt-1 text-ink/60">{capitalize(formatDateLong(date))}</p>
+                {/* conditions visible before choosing: the restaurant's own words */}
+                {!birthday && dayPromotions(settings, date, avail).map((p) => (
+                  <PromoNote key={p.id} title={`${percentLabel(p.percent)} · ${p.name}`} lines={[capitalize(hoursLabel(p)), p.conditions]} />
+                ))}
                 {error && <ErrorBox>{error.msg}</ErrorBox>}
-                <Slots avail={avail} loading={pending} time={time} onPick={pickTime} onChangeDay={() => go(1)} phone={settings.phone} />
+                <Slots avail={avail} loading={pending} time={time} onPick={pickTime} onChangeDay={() => go(1)} phone={settings.phone} hidePromo={!!birthday} />
               </>
             )}
 
@@ -227,6 +289,7 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                 <p className="mt-1 text-ink/60">
                   {capitalize(formatDateLong(date))}, ore {time}, {people} {people === 1 ? "persona" : "persone"}
                 </p>
+                {birthday ? <BirthdayOffer offer={birthday.offer} validity={birthday.validity} /> : <AppliedPromo promotion={promotionFor(settings, date, time)} />}
 
                 <Field label="Nome e cognome" error={error?.field === "name"}>
                   <input
@@ -238,10 +301,15 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                     className="input input-paper"
                   />
                 </Field>
-                <Field label="Telefono (WhatsApp)" hint="Ti invieremo qui la conferma su WhatsApp." error={error?.field === "phone"}>
+                <Field
+                  label="Telefono (WhatsApp)"
+                  hint={birthday ? "Il numero a cui ti abbiamo scritto: qui arriva la conferma." : "Ti invieremo qui la conferma su WhatsApp."}
+                  error={error?.field === "phone"}
+                >
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    readOnly={!!birthday}
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
@@ -260,6 +328,50 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                   />
                 </Field>
 
+                {settings.birthday.enabled && !birthday && (
+                  <fieldset className={`mt-6 border p-4 ${error?.field === "birthday" || error?.field === "birthdayConsent" ? "border-ember" : "border-ink/15"}`}>
+                    <legend className="flex items-center gap-2 px-1 font-semibold">
+                      <IconGift className="h-5 w-5 text-ink/60" /> Il tuo compleanno
+                    </legend>
+                    <p className="text-sm text-ink/60">Facoltativo: solo giorno e mese, per farti gli auguri con un&apos;offerta riservata.</p>
+                    <div className="mt-3 grid gap-2.5 min-[360px]:grid-cols-[6.5rem_1fr]">
+                      <select
+                        value={bdDay}
+                        onChange={(e) => setBdDay(Number(e.target.value))}
+                        aria-label="Giorno del compleanno"
+                        className="input input-paper !px-3"
+                      >
+                        <option value={0}>Giorno</option>
+                        {Array.from({ length: bdMonth ? daysInMonth(bdMonth) : 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={bdMonth}
+                        onChange={(e) => {
+                          const m = Number(e.target.value);
+                          setBdMonth(m);
+                          if (m && bdDay > daysInMonth(m)) setBdDay(0);
+                        }}
+                        aria-label="Mese del compleanno"
+                        className="input input-paper !px-3"
+                      >
+                        <option value={0}>Mese</option>
+                        {MONTHS.map((m, i) => (
+                          <option key={m} value={i + 1}>
+                            {capitalize(m)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Consent checked={bdConsent} onChange={setBdConsent} error={error?.field === "birthdayConsent"} className="mt-4">
+                      {BIRTHDAY_CONSENT}
+                    </Consent>
+                  </fieldset>
+                )}
+
                 {/* honeypot */}
                 <input
                   tabIndex={-1}
@@ -271,19 +383,13 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
                   aria-hidden
                 />
 
-                <label className={`mt-6 flex cursor-pointer items-start gap-4 border p-4 ${error?.field === "privacy" ? "border-ember" : "border-ink/15"}`}>
-                  <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)} className="peer sr-only" />
-                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center border-2 border-ink/40 text-cream transition peer-checked:border-ink peer-checked:bg-ink peer-focus-visible:ring-2 peer-focus-visible:ring-gold">
-                    {privacy && <IconCheck className="h-5 w-5" strokeWidth={3} />}
-                  </span>
-                  <span className="leading-snug text-ink/80">
-                    Acconsento all&apos;uso dei miei dati solo per gestire questa prenotazione e a ricevere su WhatsApp i messaggi che la riguardano (
-                    <Link href="/privacy" target="_blank" className="underline underline-offset-2">
-                      informativa
-                    </Link>
-                    ).
-                  </span>
-                </label>
+                <Consent checked={privacy} onChange={setPrivacy} error={error?.field === "privacy"} className="mt-6 border p-4">
+                  Acconsento all&apos;uso dei miei dati solo per gestire questa prenotazione e a ricevere su WhatsApp i messaggi che la riguardano (
+                  <Link href="/privacy" target="_blank" className="underline underline-offset-2">
+                    informativa
+                  </Link>
+                  ).
+                </Consent>
 
                 {error && <ErrorBox>{error.msg}</ErrorBox>}
 
@@ -302,11 +408,69 @@ export function BookingWizard({ settings, whatsappAuto = false }: { settings: Se
   );
 }
 
+/** A consent box: never ticked in advance. */
+function Consent({
+  checked,
+  onChange,
+  error,
+  className = "",
+  children,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  error?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={`flex cursor-pointer items-start gap-4 ${error ? "border-ember" : "border-ink/15"} ${className}`}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
+      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center border-2 border-ink/40 text-cream transition peer-checked:border-ink peer-checked:bg-ink peer-focus-visible:ring-2 peer-focus-visible:ring-gold">
+        {checked && <IconCheck className="h-5 w-5" strokeWidth={3} />}
+      </span>
+      <span className="leading-snug text-ink/80">{children}</span>
+    </label>
+  );
+}
+
+/** Promotions of the day that are the best one for at least one bookable time (a bigger all-day one hides the others). */
+function dayPromotions(settings: Settings, date: string, avail: Availability | null) {
+  if (!avail || avail.closed) return [];
+  const times = avail.services.flatMap((svc) => (svc.full ? [] : svc.slots.map((sl) => sl.time)));
+  const used = new Set(times.map((t) => promotionFor(settings, date, t)?.id));
+  return promotionsOn(settings, date).filter((p) => used.has(p.id));
+}
+
+/** Booking with the birthday link: the offer and all its terms, read before sending (the same as in the wishes). */
+function BirthdayOffer({ offer, validity }: { offer: string; validity: string }) {
+  return (
+    <div className="mt-5 flex gap-3 border-l-2 border-gold-deep bg-paper px-4 py-3.5">
+      <IconGift className="mt-0.5 h-5 w-5 shrink-0 text-gold-deep" />
+      <div className="min-w-0">
+        <p className="font-semibold">La tua offerta di compleanno</p>
+        {offer && <p className="mt-0.5 font-medium">{capitalize(offer)}</p>}
+        <p className="mt-1.5 text-ink/75">
+          Offerta personale, valida per una sola prenotazione {validity}, salvo disponibilità e nostra conferma. Al ristorante mostra un
+          documento d&apos;identità con la data di nascita. Non cumulabile con altre promozioni né convertibile in denaro.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** The discount of the chosen date and time, before confirming. */
+function AppliedPromo({ promotion }: { promotion: AppliedPromotion | null }) {
+  if (!promotion) return null;
+  return <PromoNote title={`Sconto ${percentLabel(promotion.percent)} su questa prenotazione`} lines={[promotion.name, promotion.conditions]} />;
+}
+
 /* ------------------------------------------------------------------ */
 
 function Done({
   token,
   status,
+  promotion,
+  birthdayOffer,
   settings,
   whatsappAuto,
   summary,
@@ -314,10 +478,14 @@ function Done({
 }: {
   token: string;
   status: OnlineStatus;
+  promotion: AppliedPromotion | null;
+  /** booked with the birthday link: the offer */
+  birthdayOffer: string | null;
   settings: Settings;
   whatsappAuto: boolean;
   summary: { date: string; time: string; people: number; name: string; phone: string; notes: string };
-  onAgain: () => void;
+  /** null for the birthday link: one booking per link */
+  onAgain: (() => void) | null;
 }) {
   const firstName = summary.name.split(" ")[0];
   const confirmed = status === "confirmed";
@@ -327,6 +495,8 @@ function Done({
     { icon: IconUsers, label: "Persone", value: `${summary.people} ${summary.people === 1 ? "persona" : "persone"}` },
     { icon: IconUser, label: "A nome di", value: summary.name },
     { icon: IconWhatsapp, label: "WhatsApp", value: summary.phone },
+    ...(promotion ? [{ icon: IconTag, label: "Sconto", value: `${percentLabel(promotion.percent)} · ${promotion.name}` }] : []),
+    ...(birthdayOffer !== null ? [{ icon: IconGift, label: "Compleanno", value: birthdayOffer ? capitalize(birthdayOffer) : "offerta riservata" }] : []),
   ];
   return (
     <motion.div
@@ -364,6 +534,18 @@ function Done({
             <dd className="min-w-0 flex-1 break-words text-right font-semibold">{value}</dd>
           </div>
         ))}
+        {birthdayOffer !== null && (
+          <div className="py-3">
+            <dt className="text-ink/60">Per l&apos;offerta di compleanno</dt>
+            <dd className="mt-1">Mostra al personale un documento d&apos;identità con la data di nascita.</dd>
+          </div>
+        )}
+        {promotion?.conditions && (
+          <div className="py-3">
+            <dt className="text-ink/60">Condizioni dello sconto</dt>
+            <dd className="mt-1 break-words">{promotion.conditions}</dd>
+          </div>
+        )}
         {summary.notes && (
           <div className="py-3">
             <dt className="text-ink/60">Richieste particolari</dt>
@@ -429,9 +611,11 @@ function Done({
           <Link href="/" className="underline underline-offset-4">
             Torna alla home
           </Link>
-          <button type="button" onClick={onAgain} className="underline underline-offset-4">
-            Nuova prenotazione
-          </button>
+          {onAgain && (
+            <button type="button" onClick={onAgain} className="underline underline-offset-4">
+              Nuova prenotazione
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

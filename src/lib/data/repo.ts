@@ -1,4 +1,4 @@
-import type { Booking, BookingChange, BookingStatus, Category, Dish, ErrorLog, MenuData, NewBooking, OnlineStatus, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
+import type { BirthdayContact, Booking, BookingChange, BookingStatus, Category, Dish, ErrorLog, MenuData, NewBooking, OnlineStatus, PushDevice, Settings, WhatsappMessage, WhatsappStatus } from "../types";
 
 export class SlotFullError extends Error {
   constructor() {
@@ -61,6 +61,20 @@ export interface Repo {
     patch: { status: WhatsappStatus; error?: string | null; provider_id?: string | null },
   ): Promise<WhatsappMessage | null>;
   listWhatsappMessages(bookingIds: string[]): Promise<WhatsappMessage[]>;
+
+  /** guests who agreed to the birthday wishes, one per phone number */
+  listBirthdays(): Promise<BirthdayContact[]>;
+  /** insert or replace by phone_key */
+  saveBirthday(c: BirthdayContact): Promise<void>;
+  /** by the code of the guest's birthday link (/auguri/<code>), already normalized */
+  getBirthdayByInvite(code: string): Promise<BirthdayContact | null>;
+  updateBirthday(
+    phoneKey: string,
+    patch: Partial<Pick<BirthdayContact, "last_sent_for" | "last_error" | "invite_code" | "invite_for" | "invite_booking_id" | "invite_terms">>,
+  ): Promise<void>;
+  deleteBirthday(phoneKey: string): Promise<void>;
+  /** consents older than the date (not renewed by a later booking) */
+  deleteBirthdaysBefore(iso: string): Promise<void>;
 
   /** error log (Gestione → Log errori), newest first */
   saveErrorLog(e: ErrorLog): Promise<void>;

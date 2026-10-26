@@ -21,8 +21,9 @@ export function MobileBar({ phone, bookingEnabled }: { phone: string; bookingEna
     return () => removeEventListener("scroll", on);
   }, []);
 
-  // not on the booking page, nor on the menu (people may be reading it at the table)
-  if (pathname.startsWith("/prenota") || pathname.startsWith("/menu") || (!bookingEnabled && !phone)) return null;
+  // not on the booking pages (the birthday link too: "Prenota" there would lose the offer),
+  // nor on the menu (people may be reading it at the table)
+  if (pathname.startsWith("/prenota") || pathname.startsWith("/auguri") || pathname.startsWith("/menu") || (!bookingEnabled && !phone)) return null;
 
   return (
     <div

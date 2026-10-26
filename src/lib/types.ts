@@ -74,7 +74,89 @@ export type Settings = {
   closures: Closure[];
   booking: BookingSettings;
   announcement: { enabled: boolean; text: string };
+  /** discounts on bookings, TheFork-style (Gestione → Promozioni) */
+  promotions: Promotion[];
+  /** WhatsApp birthday wishes with an offer, to guests who agreed (Gestione → Promozioni) */
+  birthday: BirthdaySettings;
 };
+
+/**
+ * A discount for the bookings of a period: from–to (dates included), on some
+ * weekdays, all day or only for arrival times between start and end (included).
+ */
+export type Promotion = {
+  id: string;
+  /** e.g. "Autunno a Prometeo" */
+  name: string;
+  /** 1–90 */
+  percent: number;
+  /** "YYYY-MM-DD", both included */
+  from: string;
+  to: string;
+  /** 0 = Sunday … 6 = Saturday; empty = every day */
+  weekdays: number[];
+  allDay: boolean;
+  /** "HH:MM", used when !allDay */
+  start: string;
+  end: string;
+  /** shown to the guest before booking, e.g. "Solo menu alla carta, bevande escluse" */
+  conditions: string;
+  enabled: boolean;
+};
+
+/** The discount as it was when the guest booked: kept on the booking even if the promotion changes. */
+export type AppliedPromotion = Pick<Promotion, "id" | "name" | "percent" | "conditions">;
+
+export type BirthdaySettings = {
+  /** ask for the birthday on the booking form and send the wishes */
+  enabled: boolean;
+  /** send the wishes this many days before the birthday (0 = on the day) */
+  daysBefore: number;
+  /**
+   * the guest's link books from the birthday − this many days to + this many days
+   * (open days only; 0 = the birthday itself, or the nearest open day before and after when closed)
+   */
+  windowDays: number;
+  /** the offer, in Italian and English: fills the approved WhatsApp template */
+  offerIt: string;
+  offerEn: string;
+};
+
+/**
+ * A guest who agreed to receive the birthday wishes, one per phone number.
+ * Kept apart from the bookings: deleting bookings doesn't remove it, and a
+ * "STOP" or the staff (Clienti) does.
+ */
+export type BirthdayContact = {
+  /** phoneKey() of the number */
+  phone_key: string;
+  phone: string;
+  name: string;
+  /** "MM-DD": only day and month, never the year */
+  birthday: string;
+  /** the exact consent text the guest ticked, and when (renewed at every booking with the box ticked) */
+  consent_text: string;
+  consent_at: string;
+  /** the birthday ("YYYY-MM-DD") the last wishes were for: never twice the same year */
+  last_sent_for: string | null;
+  last_error: string | null;
+  /**
+   * the guest's own booking link of this year's wishes, /auguri/<invite_code>: created
+   * when the wishes are due, for the birthday `invite_for`; nothing appears in Gestione
+   * until the guest books with it (`invite_booking_id`). Missing until the 2026-10-26 migration.
+   */
+  invite_code?: string | null;
+  invite_for?: string | null;
+  invite_booking_id?: string | null;
+  /**
+   * what the wishes promised, fixed when the link is created: changing the offer or the
+   * days in Gestione later applies only to the next wishes, never to a promise already made
+   */
+  invite_terms?: BirthdayTerms | null;
+};
+
+/** The birthday offer as promised to one guest: the days its link books and the offer. */
+export type BirthdayTerms = { dates: string[]; offerIt: string; offerEn: string };
 
 export type Category = {
   id: string;
@@ -142,14 +224,24 @@ export type Booking = {
    * first change and when the last one happened (missing until the 2026-10-19 migration has run)
    */
   guest_change?: GuestChange | null;
+  /** discount of the promotion valid when booked (missing until the 2026-10-25 migration has run) */
+  promotion?: AppliedPromotion | null;
+  /**
+   * booked with the birthday link: the offer promised in the wishes (Italian text), to be
+   * given after checking an ID; promotions don't apply. Null for other bookings.
+   */
+  birthday_offer?: string | null;
 };
 
 export type NewBooking = Omit<Booking, "id" | "created_at" | "manage_token" | "short_code" | "guest_change">;
 
-/** What a guest can change on their own booking. */
-export type BookingChange = Pick<Booking, "date" | "time" | "people" | "notes">;
+/** What a guest can change on their own booking (the discount follows the new date and time). */
+export type BookingChange = BookingDetails & { promotion: AppliedPromotion | null };
 
-export type GuestChange = { at: string; before: BookingChange };
+/** The details a guest chooses, as shown before and after a change. */
+export type BookingDetails = Pick<Booking, "date" | "time" | "people" | "notes">;
+
+export type GuestChange = { at: string; before: BookingDetails };
 
 /** Status of an online booking: confirmed at once (small party) or a request for the staff. */
 export type OnlineStatus = Extract<BookingStatus, "pending" | "confirmed">;

@@ -6,10 +6,10 @@ import { seedCategories, seedDishes, seedSettings } from "../seed";
 import { isActive } from "../customers";
 import { serviceLabel } from "../time";
 import { newShortCode, SHORT_CODE_ALPHABET, SHORT_CODE_LENGTH } from "../short-code";
-import type { Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
+import type { BirthdayContact, Booking, Category, Dish, ErrorLog, PushDevice, Settings, WhatsappMessage } from "../types";
 import { SlotFullError, type Repo } from "./repo";
 
-type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[]; whatsapp: WhatsappMessage[]; errors: ErrorLog[] };
+type Db = { settings: Settings; categories: Category[]; dishes: Dish[]; bookings: Booking[]; devices: PushDevice[]; whatsapp: WhatsappMessage[]; errors: ErrorLog[]; birthdays: BirthdayContact[] };
 
 const codeFromToken = (token: string) => {
   const hex = token.replace(/-/g, "");
@@ -31,10 +31,11 @@ async function read(): Promise<Db> {
   try {
     const db = JSON.parse(await fs.readFile(DB_FILE, "utf8")) as Db;
     // settings added in later versions get their defaults
-    db.settings = { ...seedSettings, ...db.settings, booking: { ...seedSettings.booking, ...db.settings.booking } };
+    db.settings = { ...seedSettings, ...db.settings, booking: { ...seedSettings.booking, ...db.settings.booking }, birthday: { ...seedSettings.birthday, ...db.settings.birthday } };
     db.devices ??= [];
     db.whatsapp ??= [];
     db.errors ??= [];
+    db.birthdays ??= [];
     // bookings saved before guests could manage them get their private link
     for (const b of db.bookings) {
       b.manage_token ??= randomUUID();
@@ -51,6 +52,7 @@ async function read(): Promise<Db> {
       devices: [],
       whatsapp: [],
       errors: [],
+      birthdays: [],
     };
   }
 }
@@ -197,6 +199,21 @@ export const localRepo: Repo = {
     const ids = new Set(bookingIds);
     return (await read()).whatsapp.filter((m) => ids.has(m.booking_id)).sort((a, b) => a.created_at.localeCompare(b.created_at));
   },
+
+  listBirthdays: async () => (await read()).birthdays.sort((a, b) => a.birthday.localeCompare(b.birthday)),
+  saveBirthday: (c) =>
+    mutate((db) => {
+      db.birthdays = db.birthdays.filter((x) => x.phone_key !== c.phone_key);
+      db.birthdays.push(c);
+    }),
+  getBirthdayByInvite: async (code) => (await read()).birthdays.find((x) => x.invite_code === code) ?? null,
+  updateBirthday: (phoneKey, patch) =>
+    mutate((db) => {
+      const c = db.birthdays.find((x) => x.phone_key === phoneKey);
+      if (c) Object.assign(c, patch);
+    }),
+  deleteBirthday: (phoneKey) => mutate((db) => void (db.birthdays = db.birthdays.filter((x) => x.phone_key !== phoneKey))),
+  deleteBirthdaysBefore: (iso) => mutate((db) => void (db.birthdays = db.birthdays.filter((x) => x.consent_at >= iso))),
 
   saveErrorLog: (e) =>
     mutate((db) => {
