@@ -18,6 +18,7 @@ import { categoryText, dishText, fingerprint, trStatus, type TrStatus } from "@/
 import type { Category, Dish } from "@/lib/types";
 import { IconChevron, IconEdit, IconEye, IconImage, IconPlus, IconTrash } from "../Icons";
 import { ImagePicker } from "./ImagePicker";
+import { MenuTranslations } from "./MenuTranslations";
 import { Card, FieldLabel, Modal, PageTitle, Toggle, iconBtn, smallInput, useToast } from "./ui";
 
 type DishDraft = Omit<Dish, "id"> & { id?: string };
@@ -29,7 +30,7 @@ const move = <T,>(list: T[], i: number, d: -1 | 1) => {
   return out;
 };
 
-export function MenuEditor({ categories, dishes, children }: { categories: Category[]; dishes: Dish[]; children?: React.ReactNode }) {
+export function MenuEditor({ categories, dishes }: { categories: Category[]; dishes: Dish[] }) {
   const router = useRouter();
   const toast = useToast();
   const [busy, start] = useTransition();
@@ -80,7 +81,7 @@ export function MenuEditor({ categories, dishes, children }: { categories: Categ
           <IconPlus className="h-4 w-4" /> Categoria
         </button>
       </PageTitle>
-      {children}
+      <MenuTranslations categories={categories} dishes={dishes} onEditDish={setDish} onEditCategory={setCat} />
 
       <div className="space-y-4">
         {categories.map((c, ci) => {

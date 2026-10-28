@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DISH_TAGS, tagLabel } from "@/lib/catalog";
+import { MENU_TEXT, type Lang } from "@/lib/i18n";
 import { euro } from "@/lib/site";
 import type { Category, Dish } from "@/lib/types";
 import { DishSheet } from "./DishSheet";
@@ -14,12 +15,15 @@ export function MenuView({
   categories,
   dishes,
   stickyTop = "top-[var(--header-h,4rem)]",
+  lang = "it",
 }: {
   categories: Category[];
   dishes: Dish[];
   /** where the category bar sticks: under the site header, or at the very top on the QR page */
   stickyTop?: string;
+  lang?: Lang;
 }) {
+  const t = MENU_TEXT[lang];
   const [filter, setFilter] = useState<string | null>(null);
   const [active, setActive] = useState(categories[0]?.id);
   const [open, setOpen] = useState<Dish | null>(null);
@@ -97,8 +101,8 @@ export function MenuView({
 
       <div className="mx-auto max-w-4xl px-6">
         {filters.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-8 text-sm" role="group" aria-label="Filtra i piatti">
-            <span className="text-muted">Mostra solo:</span>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-8 text-sm" role="group" aria-label={t.filterLabel}>
+            <span className="text-muted">{t.showOnly}</span>
             {filters.map((f) => (
               <button
                 key={f.id}
@@ -106,7 +110,7 @@ export function MenuView({
                 onClick={() => setFilter(filter === f.id ? null : f.id)}
                 className={`border-b py-1 font-semibold transition ${filter === f.id ? "border-gold text-gold" : "border-transparent text-cream/70"}`}
               >
-                {f.label}
+                {lang === "en" ? f.en : f.label}
               </button>
             ))}
           </div>
@@ -119,7 +123,7 @@ export function MenuView({
             <ul className="mt-8 border-t border-line">
               {byCat.get(c.id)!.map((d) => (
                 <li key={d.id}>
-                  <DishRow d={d} onOpen={() => setOpen(d)} />
+                  <DishRow d={d} lang={lang} onOpen={() => setOpen(d)} />
                 </li>
               ))}
             </ul>
@@ -127,12 +131,12 @@ export function MenuView({
         ))}
       </div>
 
-      <DishSheet dish={open} onClose={() => setOpen(null)} />
+      <DishSheet dish={open} lang={lang} onClose={() => setOpen(null)} />
     </>
   );
 }
 
-function DishRow({ d, onOpen }: { d: Dish; onOpen: () => void }) {
+function DishRow({ d, lang, onOpen }: { d: Dish; lang: Lang; onOpen: () => void }) {
   const extra = d.tags.filter((t) => t !== "signature");
   return (
     <button
@@ -153,7 +157,7 @@ function DishRow({ d, onOpen }: { d: Dish; onOpen: () => void }) {
         {d.description && <span className="mt-1.5 block leading-relaxed text-cream/65">{d.description}</span>}
         {(d.price_note || extra.length > 0 || !d.available) && (
           <span className="mt-2 block text-sm italic text-gold/80">
-            {[d.price_note, ...extra.map(tagLabel), !d.available ? "esaurito oggi" : ""].filter(Boolean).join(" · ")}
+            {[d.price_note, ...extra.map((x) => tagLabel(x, lang)), !d.available ? MENU_TEXT[lang].soldOutShort : ""].filter(Boolean).join(" · ")}
           </span>
         )}
       </span>

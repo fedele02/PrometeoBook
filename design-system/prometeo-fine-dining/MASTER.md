@@ -118,6 +118,8 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
 - **App icon**: logo + “GESTIONE” in Cinzel on ink, full bleed (iOS/Android apply their own mask); maskable variant inside the 80 % safe zone;
   monochrome badge for the Android status bar; black launch screens for iPhone. Source: Penpot export in `design/app-icon/`.
 
+- **Language switch** (`LangSwitch`, menu pages): “IT · EN” centred under the subtitle, `label` 0.72rem, active gold with a 1 px gold underline,
+  inactive `cream/55`, middle dot `cream/30`; links ≥ 44 px tall. Italian at the root, English under `/en`.
 - **Menu translations** (Menu page, card above the categories): Cinzel title “Traduzione inglese”, one line “N di M testi tradotti · X da tradurre (ember) · Y da rivedere (gold-light)”,
   a 4 px gold progress bar, `btn-line` Esporta + `btn-gold` Importa (full width side by side on phones). Dish/category rows: `EN` pill 10 px
   (struck through, `white/15` border = missing; `EN ↻` gold = Italian changed). Export sheet: radio cards only when part is translated,
@@ -125,6 +127,9 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
   each warning on a 2 px gold left rule, unchecked) then “Pronte” (checked, Modifica opens the fields) then “Ignorate” (muted list);
   IT left muted, EN right, stacked on phones; square gold checkbox; footer button “Salva N traduzioni” + gold-light line for unconfirmed rows.
   Dish/category modal: collapsible “Inglese” block with status on the right; when outdated, gold-rule note with “conferma che va bene così”.
+  Buttons: Controlla (full row on phones), Esporta, Importa; then a text link “Apri il menu in inglese sul sito →”. Review sheet (“Controlla”):
+  pill filters Tutto / Da tradurre / Da rivedere with counts; per category a heading row, then one card per dish: status label (ember = missing,
+  gold-light = outdated), Italian muted on the left, English on the right after a gold rule (stacked on phones), “Modifica” opens the editor.
 
 ## Motion (Motion library)
 

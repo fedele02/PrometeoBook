@@ -3,22 +3,33 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { applyTranslationsAction } from "@/app/gestore-prometeo-2026/actions";
-import { buildExport, exportFileName, LANGS, LIMITS, readImport, rowTooLong, trStatus, type ImportRow } from "@/lib/menu-i18n";
+import { MENU_PATH } from "@/lib/i18n";
+import { buildExport, exportFileName, LANGS, LIMITS, readImport, rowTooLong, trStatus, type ImportRow, type TrStatus } from "@/lib/menu-i18n";
 import { romeNow } from "@/lib/time";
 import type { Category, Dish, DishText, MenuLang } from "@/lib/types";
-import { IconCheck, IconDownload, IconRefresh } from "../Icons";
+import { IconArrow, IconCheck, IconDownload, IconEdit, IconEye, IconRefresh } from "../Icons";
 import { Card, Modal, smallInput, useToast } from "./ui";
 
 const LANG: MenuLang = "en";
 /** The only thing the staff writes to the AI: everything else is inside the file. */
 const PROMPT = "Segui le istruzioni contenute nel file e restituiscimi il file tradotto.";
 
-export function MenuTranslations({ categories, dishes }: { categories: Category[]; dishes: Dish[] }) {
+export function MenuTranslations({
+  categories,
+  dishes,
+  onEditDish,
+  onEditCategory,
+}: {
+  categories: Category[];
+  dishes: Dish[];
+  onEditDish: (d: Dish) => void;
+  onEditCategory: (c: Category) => void;
+}) {
   const items = [...categories, ...dishes];
   const missing = items.filter((x) => trStatus(x, LANG) === "missing").length;
   const outdated = items.filter((x) => trStatus(x, LANG) === "outdated").length;
   const done = items.length - missing - outdated;
-  const [open, setOpen] = useState<"export" | "import" | null>(null);
+  const [open, setOpen] = useState<"export" | "import" | "review" | null>(null);
 
   return (
     <Card className="mb-6">
@@ -34,19 +45,178 @@ export function MenuTranslations({ categories, dishes }: { categories: Category[
             <div className="h-full bg-gold" style={{ width: `${items.length ? (done / items.length) * 100 : 0}%` }} />
           </div>
         </div>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <button onClick={() => setOpen("export")} className="btn btn-line min-h-11 flex-1 px-4 text-xs sm:flex-none">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+          <button onClick={() => setOpen("review")} className="btn btn-line col-span-2 min-h-11 px-3 text-xs sm:px-4">
+            <IconEye className="h-4 w-4" /> Controlla
+          </button>
+          <button onClick={() => setOpen("export")} className="btn btn-line min-h-11 px-3 text-xs sm:px-4">
             <IconDownload className="h-4 w-4" /> Esporta
           </button>
-          <button onClick={() => setOpen("import")} className="btn btn-gold min-h-11 flex-1 px-4 text-xs sm:flex-none">
+          <button onClick={() => setOpen("import")} className="btn btn-gold min-h-11 px-3 text-xs sm:px-4">
             <IconRefresh className="h-4 w-4" /> Importa
           </button>
         </div>
       </div>
+      <a
+        href={MENU_PATH[LANG].site}
+        target="_blank"
+        rel="noopener"
+        className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-cream/70 underline-offset-4 hover:text-cream hover:underline"
+      >
+        Apri il menu in {LANGS[LANG].label} sul sito <IconArrow className="h-4 w-4" />
+      </a>
 
       <ExportModal open={open === "export"} onClose={() => setOpen(null)} categories={categories} dishes={dishes} pending={missing + outdated} />
       {open === "import" && <ImportModal onClose={() => setOpen(null)} categories={categories} dishes={dishes} />}
+      {open === "review" && (
+        <ReviewModal
+          categories={categories}
+          dishes={dishes}
+          onClose={() => setOpen(null)}
+          onEditDish={(d) => {
+            setOpen(null);
+            onEditDish(d);
+          }}
+          onEditCategory={(c) => {
+            setOpen(null);
+            onEditCategory(c);
+          }}
+        />
+      )}
     </Card>
+  );
+}
+
+/* ---------- review ------------------------------------------------------ */
+
+const STATUS_LABEL: Record<TrStatus, string> = { ok: "Tradotto", missing: "Da tradurre", outdated: "Da rivedere" };
+type ReviewFilter = "all" | Exclude<TrStatus, "ok">;
+
+/** The whole menu, Italian next to the English, with a shortcut to the editor of each item. */
+function ReviewModal({
+  categories,
+  dishes,
+  onClose,
+  onEditDish,
+  onEditCategory,
+}: {
+  categories: Category[];
+  dishes: Dish[];
+  onClose: () => void;
+  onEditDish: (d: Dish) => void;
+  onEditCategory: (c: Category) => void;
+}) {
+  const [filter, setFilter] = useState<ReviewFilter>("all");
+  const show = (x: Category | Dish) => filter === "all" || trStatus(x, LANG) === filter;
+  const count = (f: ReviewFilter) => [...categories, ...dishes].filter((x) => f === "all" || trStatus(x, LANG) === f).length;
+  const groups = categories
+    .map((c) => ({ c, list: dishes.filter((d) => d.category_id === c.id && show(d)) }))
+    .filter((g) => show(g.c) || g.list.length);
+
+  return (
+    <Modal open onClose={onClose} title="Controlla la traduzione">
+      <div className="grid gap-6">
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5" role="group" aria-label="Mostra">
+          {(["all", "missing", "outdated"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
+              className={`shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
+                filter === f ? "border-gold bg-gold/20 text-gold-light" : "border-white/10 text-cream/60"
+              }`}
+            >
+              {f === "all" ? "Tutto" : STATUS_LABEL[f]} <span className="font-normal opacity-60">{count(f)}</span>
+            </button>
+          ))}
+        </div>
+
+        {groups.length === 0 && <p className="py-8 text-center text-sm text-cream/55">Niente in questa lista.</p>}
+
+        {groups.map(({ c, list }) => (
+          <section key={c.id} className="grid gap-2">
+            <ReviewItem
+              heading
+              it={{ name: c.name, description: c.description }}
+              en={c.tr[LANG]}
+              status={trStatus(c, LANG)}
+              onEdit={() => onEditCategory(c)}
+              dim={!show(c)}
+            />
+            {list.map((d) => (
+              <ReviewItem
+                key={d.id}
+                it={{ name: d.name, description: d.description, price_note: d.price_note }}
+                en={d.tr[LANG]}
+                status={trStatus(d, LANG)}
+                onEdit={() => onEditDish(d)}
+                hidden={!d.visible}
+              />
+            ))}
+          </section>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function ReviewItem({
+  it,
+  en,
+  status,
+  onEdit,
+  heading,
+  dim,
+  hidden,
+}: {
+  it: Partial<DishText>;
+  en?: Partial<DishText>;
+  status: TrStatus;
+  onEdit: () => void;
+  heading?: boolean;
+  dim?: boolean;
+  hidden?: boolean;
+}) {
+  const fields = (["name", "description", "price_note"] as const).filter((k) => it[k] || en?.[k]);
+  return (
+    <article
+      className={`rounded-md p-4 ${heading ? "border-b border-gold/25" : "border border-white/[0.07] bg-white/[0.02]"} ${dim ? "opacity-55" : ""}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span
+          className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+            status === "ok" ? "text-cream/40" : status === "missing" ? "text-ember" : "text-gold-light"
+          }`}
+        >
+          {heading ? "Categoria · " : ""}
+          {STATUS_LABEL[status]}
+          {hidden ? " · nascosto sul sito" : ""}
+        </span>
+        <button onClick={onEdit} className="inline-flex min-h-9 shrink-0 items-center gap-1.5 text-xs font-semibold text-cream/65 hover:text-cream">
+          <IconEdit className="h-4 w-4" /> Modifica
+        </button>
+      </div>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2 sm:gap-5">
+        <div lang="it">
+          {fields.map((k) => (
+            <p key={k} className={k === "name" ? `text-cream/60 ${heading ? "font-display tracking-[0.06em]" : "font-semibold"}` : "mt-1 text-sm text-cream/45"}>
+              {it[k] || "—"}
+            </p>
+          ))}
+        </div>
+        <div lang="en" className="border-l-2 border-gold/40 pl-3 sm:border-l sm:pl-5">
+          {en?.name ? (
+            fields.map((k) => (
+              <p key={k} className={k === "name" ? `text-cream ${heading ? "font-display tracking-[0.06em]" : "font-semibold"}` : "mt-1 text-sm text-cream/75"}>
+                {en[k] || <span className="text-ember/80">manca</span>}
+              </p>
+            ))
+          ) : (
+            <p className="text-sm italic text-cream/40">Non ancora tradotto: sul sito si vede l&apos;italiano.</p>
+          )}
+        </div>
+      </div>
+    </article>
   );
 }
 

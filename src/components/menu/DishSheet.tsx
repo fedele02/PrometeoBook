@@ -3,14 +3,16 @@
 import Image from "next/image";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { useEffect } from "react";
-import { ALLERGENS, tagLabel } from "@/lib/catalog";
+import { allergenName, tagLabel } from "@/lib/catalog";
+import { MENU_TEXT, type Lang } from "@/lib/i18n";
 import { euro } from "@/lib/site";
 import type { Dish } from "@/lib/types";
 import { IconClose } from "../Icons";
 
 /** Bottom sheet on phones (drag the handle down to close), dialog on desktop. */
-export function DishSheet({ dish, onClose }: { dish: Dish | null; onClose: () => void }) {
+export function DishSheet({ dish, lang = "it", onClose }: { dish: Dish | null; lang?: Lang; onClose: () => void }) {
   const drag = useDragControls();
+  const t = MENU_TEXT[lang];
 
   useEffect(() => {
     if (!dish) return;
@@ -59,7 +61,7 @@ export function DishSheet({ dish, onClose }: { dish: Dish | null; onClose: () =>
             </div>
             <button
               onClick={onClose}
-              aria-label="Chiudi"
+              aria-label={t.close}
               className="absolute right-3 top-3 z-20 grid h-11 w-11 place-items-center bg-black/60 text-cream"
             >
               <IconClose className="h-5 w-5" />
@@ -81,19 +83,19 @@ export function DishSheet({ dish, onClose }: { dish: Dish | null; onClose: () =>
                 {dish.price !== null && <span className="caps shrink-0 pt-1 text-2xl text-gold">€ {euro(dish.price)}</span>}
               </div>
               {dish.price_note && <p className="mt-1 italic text-gold/80">{dish.price_note}</p>}
-              {!dish.available && <p className="mt-3 font-semibold text-ember">Esaurito per oggi</p>}
+              {!dish.available && <p className="mt-3 font-semibold text-ember">{t.soldOut}</p>}
               {dish.description && <p className="mt-4 text-[1.05rem] leading-relaxed text-cream/75">{dish.description}</p>}
-              {tags.length > 0 && <p className="mt-4 text-sm text-gold">{tags.map(tagLabel).join(" · ")}</p>}
+              {tags.length > 0 && <p className="mt-4 text-sm text-gold">{tags.map((x) => tagLabel(x, lang)).join(" · ")}</p>}
 
               <div className="mt-6 border-t border-line pt-5">
-                <p className="label text-[0.68rem] text-gold">Allergeni</p>
+                <p className="label text-[0.68rem] text-gold">{t.allergens}</p>
                 <p className="mt-2 text-[0.95rem] text-cream/75">
                   {dish.allergens.length
                     ? dish.allergens
-                        .map((id) => ALLERGENS.find((a) => a.id === id)?.label)
+                        .map((id) => allergenName(id, lang))
                         .filter(Boolean)
                         .join(" · ")
-                    : "Chiedi al personale di sala: ti indicheremo gli allergeni presenti in ogni piatto."}
+                    : t.askAllergens}
                 </p>
               </div>
             </div>
