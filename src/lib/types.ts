@@ -158,12 +158,23 @@ export type BirthdayContact = {
 /** The birthday offer as promised to one guest: the days its link books and the offer. */
 export type BirthdayTerms = { dates: string[]; offerIt: string; offerEn: string };
 
+/** Languages the menu can be translated into (Italian is the original). */
+export type MenuLang = "en";
+/**
+ * A translation and the Italian it was made from (`src`, see lib/menu-i18n):
+ * when the Italian changes the translation is flagged "da rivedere".
+ */
+export type Translated<T> = T & { src: string };
+export type CategoryText = { name: string; description: string };
+export type DishText = { name: string; description: string; price_note: string };
+
 export type Category = {
   id: string;
   name: string;
   description: string;
   position: number;
   visible: boolean;
+  tr: Partial<Record<MenuLang, Translated<CategoryText>>>;
 };
 
 export type Dish = {
@@ -183,6 +194,7 @@ export type Dish = {
   /** temporarily sold out: shown greyed out */
   available: boolean;
   position: number;
+  tr: Partial<Record<MenuLang, Translated<DishText>>>;
 };
 
 export type MenuData = {

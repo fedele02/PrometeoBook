@@ -15,6 +15,8 @@ import { Calendar } from "./Calendar";
 import { Choice, ErrorBox, Field, MorePeople, PromoNote, Slots, Title } from "./parts";
 import { downloadIcs } from "./ics";
 import { rememberBooking } from "@/lib/guest-bookings";
+import { nationalDigits } from "@/lib/phone";
+import { PhoneInput } from "../PhoneInput";
 
 type Step = 0 | 1 | 2 | 3;
 const SAVED = "prometeo:guest";
@@ -111,7 +113,7 @@ export function BookingWizard({ settings, whatsappAuto = false, birthday }: { se
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2) return setError({ msg: "Scrivi il tuo nome, per favore.", field: "name" });
-    if (phone.replace(/\D/g, "").length < 6) return setError({ msg: "Scrivi un numero di telefono valido.", field: "phone" });
+    if (nationalDigits(phone) < 6) return setError({ msg: "Scrivi un numero di telefono valido.", field: "phone" });
     const bdKey = !birthday && settings.birthday.enabled && bdDay && bdMonth ? (birthdayKey(bdDay, bdMonth) ?? "") : "";
     if (!birthday && settings.birthday.enabled) {
       if (bdConsent && !bdKey) return setError({ msg: "Scegli giorno e mese del tuo compleanno.", field: "birthday" });
@@ -303,20 +305,10 @@ export function BookingWizard({ settings, whatsappAuto = false, birthday }: { se
                 </Field>
                 <Field
                   label="Telefono (WhatsApp)"
-                  hint={birthday ? "Il numero a cui ti abbiamo scritto: qui arriva la conferma." : "Ti invieremo qui la conferma su WhatsApp."}
+                  hint={birthday ? "Il numero a cui ti abbiamo scritto: qui arriva la conferma." : "Ti invieremo qui la conferma su WhatsApp. Numero straniero? Tocca la bandiera."}
                   error={error?.field === "phone"}
                 >
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    readOnly={!!birthday}
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    enterKeyHint="done"
-                    placeholder="es. 333 123 4567"
-                    className="input input-paper"
-                  />
+                  <PhoneInput value={phone} onChange={setPhone} readOnly={!!birthday} enterKeyHint="done" />
                 </Field>
                 <Field label="Richieste particolari" hint="Facoltativo: allergie, seggiolone, un compleanno…">
                   <textarea

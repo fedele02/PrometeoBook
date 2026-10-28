@@ -106,10 +106,10 @@ export const seedSettings: Settings = {
 };
 
 export const seedCategories: Category[] = [
-  { id: "cat-antipasti", name: "Antipasti", description: "", position: 0, visible: true },
-  { id: "cat-primi", name: "Primi", description: "", position: 1, visible: true },
-  { id: "cat-secondi", name: "Secondi", description: "", position: 2, visible: true },
-  { id: "cat-dolci", name: "Dolci", description: "", position: 3, visible: true },
+  { id: "cat-antipasti", name: "Antipasti", description: "", position: 0, visible: true, tr: {} },
+  { id: "cat-primi", name: "Primi", description: "", position: 1, visible: true, tr: {} },
+  { id: "cat-secondi", name: "Secondi", description: "", position: 2, visible: true, tr: {} },
+  { id: "cat-dolci", name: "Dolci", description: "", position: 3, visible: true, tr: {} },
 ];
 
 let pos = 0;
@@ -123,6 +123,7 @@ const dish = (d: Partial<Dish> & Pick<Dish, "id" | "category_id" | "name">): Dis
   visible: true,
   available: true,
   position: pos++,
+  tr: {},
   ...d,
 });
 

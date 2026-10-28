@@ -37,6 +37,8 @@ async function read(): Promise<Db> {
     db.errors ??= [];
     db.birthdays ??= [];
     // bookings saved before guests could manage them get their private link
+    for (const c of db.categories) c.tr ??= {};
+    for (const d of db.dishes) d.tr ??= {};
     for (const b of db.bookings) {
       b.manage_token ??= randomUUID();
       // derived from the token, so the same booking always gets the same code

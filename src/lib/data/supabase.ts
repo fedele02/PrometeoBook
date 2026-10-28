@@ -18,7 +18,9 @@ const normDish = (d: Dish): Dish => ({
   price: d.price === null ? null : Number(d.price),
   tags: d.tags ?? [],
   allergens: d.allergens ?? [],
+  tr: d.tr ?? {},
 });
+const normCategory = (c: Category): Category => ({ ...c, tr: c.tr ?? {} });
 
 export function supabaseRepo(): Repo {
   // Server-only client with the secret key: every access goes through
@@ -46,7 +48,7 @@ export function supabaseRepo(): Repo {
         dq = dq.eq("visible", true);
       }
       const [c, d] = await Promise.all([cq, dq]);
-      const categories = check(c) as Category[];
+      const categories = (check(c) as Category[]).map(normCategory);
       const ids = new Set(categories.map((x) => x.id));
       return { categories, dishes: (check(d) as Dish[]).map(normDish).filter((x) => ids.has(x.category_id)) };
     },

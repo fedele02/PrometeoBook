@@ -12,7 +12,7 @@ import { announce, pendingCount } from "@/lib/events";
 import { DEFAULT_PREFS, DEVICE_COOKIE, pushToDevices } from "@/lib/push";
 import { promotionFor } from "@/lib/promotions";
 import { ADMIN_PATH } from "@/lib/pwa";
-import { adminBookingSchema, birthdaySchema, categorySchema, dishSchema, firstError, settingsSchema } from "@/lib/schemas";
+import { adminBookingSchema, birthdaySchema, categorySchema, categoryTextSchema, dishSchema, dishTextSchema, firstError, settingsSchema } from "@/lib/schemas";
 import type { DeclineMessage } from "@/lib/messages";
 import type { BirthdaySettings, Category, Dish, NotifyPrefs, Promotion, PushDevice, Settings, WhatsappKind } from "@/lib/types";
 import { sendBookingWhatsapp, type WhatsappOutcome } from "@/lib/whatsapp";
@@ -277,6 +277,38 @@ export async function deleteDishAction(id: string) {
 export async function reorderDishesAction(ids: string[]) {
   return guarded(async () => {
     await repo().reorderDishes(ids);
+    publish();
+  });
+}
+
+const translationRows = z
+  .array(
+    z.discriminatedUnion("kind", [
+      categoryTextSchema.extend({ kind: z.literal("category"), id: z.string().max(64), src: z.string().max(16) }),
+      dishTextSchema.extend({ kind: z.literal("dish"), id: z.string().max(64), src: z.string().max(16) }),
+    ]),
+  )
+  .max(1000);
+
+/** Translations confirmed in the import preview (Menu → Traduzioni): only the `tr` field changes. */
+export async function applyTranslationsAction(lang: "en", input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const p = translationRows.safeParse(input);
+  if (!p.success || lang !== "en") return { ok: false, error: `Traduzioni non valide: ${p.success ? "lingua" : firstError(p.error)}` };
+  return guarded(async () => {
+    const r = repo();
+    const { categories, dishes } = await r.getMenu({ includeHidden: true });
+    const cats = new Map(categories.map((c) => [c.id, c]));
+    const byId = new Map(dishes.map((d) => [d.id, d]));
+    for (const row of p.data) {
+      if (row.kind === "category") {
+        const c = cats.get(row.id);
+        if (c) await r.upsertCategory({ ...c, tr: { ...c.tr, [lang]: { name: row.name, description: row.description, src: row.src } } });
+      } else {
+        const d = byId.get(row.id);
+        if (d) await r.upsertDish({ ...d, tr: { ...d.tr, [lang]: { name: row.name, description: row.description, price_note: row.price_note, src: row.src } } });
+      }
+    }
     publish();
   });
 }

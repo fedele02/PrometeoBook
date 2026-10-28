@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createBookingAction, type AnswerResult } from "@/app/gestore-prometeo-2026/actions";
+import { PhoneInput } from "../PhoneInput";
 import { FieldLabel, Modal, smallInput, Toggle } from "./ui";
 
 /** Bookings taken by phone: already confirmed, no capacity limit (the staff decides). */
@@ -63,7 +64,7 @@ export function PhoneBookingModal({
           <input value={f.name} onChange={(e) => set("name", e.target.value)} autoCapitalize="words" className={smallInput} />
         </FieldLabel>
         <FieldLabel label="Telefono">
-          <input type="tel" inputMode="tel" value={f.phone} onChange={(e) => set("phone", e.target.value)} className={smallInput} />
+          <PhoneInput tone="dark" value={f.phone} onChange={(v) => set("phone", v)} className="!min-h-12 !text-base" />
         </FieldLabel>
         <FieldLabel label="Note">
           <textarea value={f.notes} onChange={(e) => set("notes", e.target.value)} rows={2} className={`${smallInput} py-3`} />

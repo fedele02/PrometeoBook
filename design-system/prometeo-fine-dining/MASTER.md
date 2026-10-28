@@ -67,6 +67,10 @@ Body text never below 16 px on mobile; line length ≤ 70 characters.
 - **Promotion (site)**: “−20%” (real minus sign) in `ok-deep`, 12 px bold, under the day number in the calendar and under the time in the slots
   (`gold-light` when the choice is selected). Callout with `ok-deep` left rule on `paper` + tag icon: title “−20% · Name”, then hours and the
   restaurant's conditions; shown before choosing a time (only promotions that win at least one time) and before confirming.
+- **Phone field** (`PhoneInput`, site and staff app): one `.input` box split by a hairline (`ink/15` on paper, `white/15` dark):
+  left the 21×14 SVG flag (hairline edge, never emoji: Windows shows letters) + “+39” + chevron, with an invisible native `select` on top
+  (phones open their own picker; country names in their own language, “Altro paese · Other country” = globe, code typed by hand);
+  right the number. Default Italia +39; typing or pasting “+44…” picks the country. Saved as “+44 7911 123456” (trunk 0 dropped outside Italy).
 - **Birthday (site)**: optional `fieldset` “Il tuo compleanno” (gift icon) after the notes: Giorno select (6.5rem) + Mese select, stacked below 360 px;
   its own consent box (same style as the privacy box, never pre-ticked).
 - **Birthday link page** (`/auguri/<code>`): gift icon in `gold-deep`, Cinzel title “Buon compleanno, Nome”; the same booking wizard with
@@ -113,6 +117,14 @@ the refusal opening inside the card as in B). Same dark + gold tokens as the sit
   `public/logo.png` are generated from it (`npm run assets:favicon`).
 - **App icon**: logo + “GESTIONE” in Cinzel on ink, full bleed (iOS/Android apply their own mask); maskable variant inside the 80 % safe zone;
   monochrome badge for the Android status bar; black launch screens for iPhone. Source: Penpot export in `design/app-icon/`.
+
+- **Menu translations** (Menu page, card above the categories): Cinzel title “Traduzione inglese”, one line “N di M testi tradotti · X da tradurre (ember) · Y da rivedere (gold-light)”,
+  a 4 px gold progress bar, `btn-line` Esporta + `btn-gold` Importa (full width side by side on phones). Dish/category rows: `EN` pill 10 px
+  (struck through, `white/15` border = missing; `EN ↻` gold = Italian changed). Export sheet: radio cards only when part is translated,
+  three numbered steps (gold ring numbers) with the phrase for the AI and Copia. Import preview: sections “Da confermare” (cards with `gold/35` border,
+  each warning on a 2 px gold left rule, unchecked) then “Pronte” (checked, Modifica opens the fields) then “Ignorate” (muted list);
+  IT left muted, EN right, stacked on phones; square gold checkbox; footer button “Salva N traduzioni” + gold-light line for unconfirmed rows.
+  Dish/category modal: collapsible “Inglese” block with status on the right; when outdated, gold-rule note with “conferma che va bene così”.
 
 ## Motion (Motion library)
 

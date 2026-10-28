@@ -78,12 +78,18 @@ export const birthdaySchema = z.object({
   offerEn: text(60),
 });
 
+// same limits as the Italian fields
+const src = z.string().max(16);
+export const categoryTextSchema = z.object({ name: text(60), description: text(200) });
+export const dishTextSchema = z.object({ name: text(120), description: text(600), price_note: text(80) });
+
 export const categorySchema = z.object({
   id: z.string().min(1).max(64),
   name: text(60).min(1, "Il nome è obbligatorio"),
   description: text(200),
   position: z.number().int(),
   visible: z.boolean(),
+  tr: z.object({ en: categoryTextSchema.extend({ src }).optional() }).default({}),
 });
 
 export const dishSchema = z.object({
@@ -99,6 +105,7 @@ export const dishSchema = z.object({
   visible: z.boolean(),
   available: z.boolean(),
   position: z.number().int(),
+  tr: z.object({ en: dishTextSchema.extend({ src }).optional() }).default({}),
 });
 
 export const adminBookingSchema = z.object({

@@ -38,7 +38,8 @@ create table if not exists public.categories (
   name        text not null,
   description text not null default '',
   position    int  not null default 0,
-  visible     boolean not null default true
+  visible     boolean not null default true,
+  tr          jsonb not null default '{}'::jsonb   -- translations: { "en": { name, description, src } }
 );
 
 create table if not exists public.dishes (
@@ -53,7 +54,8 @@ create table if not exists public.dishes (
   allergens   int[]  not null default '{}',
   visible     boolean not null default true,
   available   boolean not null default true,
-  position    int  not null default 0
+  position    int  not null default 0,
+  tr          jsonb not null default '{}'::jsonb   -- translations: { "en": { name, description, price_note, src } }
 );
 create index if not exists dishes_category_idx on public.dishes (category_id, position);
 
